@@ -1,0 +1,13 @@
+# 작업용 참고 파일 (배포에 불필요)
+_ref/
+
+# OS / 편집기
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# 내부 운영 문서 (공개 배포 제외)
+_운영/

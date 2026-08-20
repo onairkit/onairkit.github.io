@@ -1,0 +1,58 @@
+name: 💡 위젯 · 기능 요청
+description: 이런 위젯이 있었으면 좋겠다 / 이 기능이 아쉽다
+title: "[요청] "
+labels: ["요청"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        온에어킷은 **겹치는 요청부터 만듭니다.**
+        이미 비슷한 요청이 있으면 거기에 👍 를 눌러 주세요. 그게 우선순위가 됩니다.
+
+  - type: textarea
+    id: situation
+    attributes:
+      label: 어떤 상황에서 필요한가요?
+      description: |
+        기능 이름보다 **상황**을 적어 주시는 게 훨씬 도움이 됩니다.
+        "이럴 때 곤란하다"는 이야기에서 더 나은 해법이 나오는 경우가 많습니다.
+      placeholder: 시참 방송할 때 지금 몇 번째 사람 차례인지 시청자들이 자꾸 물어봅니다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: 지금은 어떻게 하고 계신가요?
+      description: 수동으로 하고 계신 일이 있다면 그게 바로 자동화할 지점입니다.
+      placeholder: 채팅에 계속 다시 적어주거나, 메모장을 화면에 띄워 둡니다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reference
+    attributes:
+      label: 비슷한 걸 다른 데서 보신 적 있나요?
+      description: 다른 스트리머 방송, 유료 서비스, 해외 툴 — 아무거나 좋습니다. 링크나 스크린샷이면 더 좋습니다.
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: 어느 플랫폼에서 방송하시나요?
+      options:
+        - 치지직
+        - SOOP (아프리카)
+        - 유튜브
+        - 트위치
+        - 여러 곳 동시송출
+        - 아직 시작 전
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        **참고 — 만들 수 없는 것도 있습니다.**
+        온에어킷은 서버를 쓰지 않는 것이 원칙이라, 아래는 요청하셔도 만들어 드리기 어렵습니다.
+        - 채팅 자동 연동 (채팅 명령어로 대기열 추가 등)
+        - 후원 알림 · 후원 목록 (트윕 · 투네이션을 써 주세요)
+        - 여러 PC 간 값 동기화

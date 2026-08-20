@@ -1,0 +1,18 @@
+# GitHub 계정이 없는 스트리머가 훨씬 많으므로 빈 이슈는 막고,
+# 대화가 필요한 문의는 전부 디스코드로 보낸다.
+blank_issues_enabled: false
+
+contact_links:
+  # ★배포 전 필수★ onairkit 를 실제 GitHub 아이디로 교체할 것
+  # (디스코드 초대 링크 자체는 discord/index.html 에서만 관리한다)
+  - name: 💬 디스코드에서 물어보기 (가장 빠릅니다)
+    url: https://onairkit.github.io/discord/
+    about: 사용법 질문, 새 위젯 요청, 커스텀 제작 문의는 여기가 편합니다. GitHub 계정 없어도 됩니다.
+
+  - name: 📖 OBS 설정법 · 문제 해결
+    url: https://github.com/onairkit/onairkit.github.io/blob/main/docs/OBS설정법.md
+    about: "배경이 검게 나옴 / 글자가 안 뜸 / 파라미터가 안 먹힘 — 대부분 여기에 답이 있습니다."
+
+  - name: 🎛️ 위젯 주소 만들기 (URL 빌더)
+    url: https://onairkit.github.io/
+    about: 파라미터를 손으로 적지 말고 폼에서 고르세요. 주소를 만들어 드립니다.

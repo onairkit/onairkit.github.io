@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>온에어킷 · 카운터</title>
+<!--
+  Pretendard / SIL Open Font License 1.1
+  (c) 2021 Kil Hyung-jin, with Reserved Font Name 'Pretendard'
+  https://github.com/orioncactus/pretendard/blob/main/LICENSE
+  온에어킷은 Pretendard를 수정 없이 원본 그대로 CDN으로 불러옵니다.
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+
+<!--
+==========================================================================
+ 온에어킷 (onairkit) · 카운터 위젯  counter.html
+ 데스카운트 / 승패 / 내기 횟수 같은 숫자 카운터. 값은 브라우저에 저장되어
+ 새로고침하거나 OBS를 껐다 켜도 그대로 유지됩니다.
+==========================================================================
+
+ [ OBS에서 쓰는 법 ]
+   1. 소스 목록에서 [+] 를 누르고 "브라우저" 를 추가합니다.
+   2. "로컬 파일" 체크박스를 켭니다.
+   3. "찾아보기" 로 이 counter.html 파일을 선택합니다.
+   4. 폭 1920 / 높이 1080 으로 맞춥니다. (이 위젯은 1920x1080 기준으로 디자인되었습니다)
+   5. 배경은 투명하므로 게임 화면 위에 그대로 올리면 됩니다.
+
+ [ 파라미터로 바꾸는 법 ]
+   OBS 브라우저 소스 속성에서 "로컬 파일" 체크를 해제하면 URL 입력칸이 생깁니다.
+   거기에 아래 형식으로 직접 입력하세요. (물음표 뒤에 파라미터=값, 여러 개는 &로 연결)
+
+     file:///C:/Users/woohyeon/Desktop/취미/onairkit/widgets/counter.html?label=데스카운트&goal=10
+
+   경로는 본인 PC의 실제 파일 위치로 바꿔야 합니다.
+   파일 탐색기 주소창에서 경로를 복사한 뒤 역슬래시(\)를 슬래시(/)로 바꾸면 됩니다.
+   한글이나 띄어쓰기가 들어가도 대부분 그대로 동작하지만, 안 되면 띄어쓰기를 %20 으로 바꿔보세요.
+
+ [ 파라미터 표 ]
+ ┌─────────┬────────────────────────────────────────────┬───────────┬──────────────────────────┐
+ │ 이름    │ 설명                                       │ 기본값    │ 허용 범위                │
+ ├─────────┼────────────────────────────────────────────┼───────────┼──────────────────────────┤
+ │ label   │ 카운터 이름. 빈 값이면 숨김                │ 데스카운트│ 문자열 (40자까지)        │
+ │ value   │ 초기값                                     │ 0         │ -9999 ~ 999999 (정수)    │
+ │ step    │ 버튼/키보드 한 번에 움직이는 증감 단위     │ 1         │ 1 ~ 1000 (정수)          │
+ │ min     │ 내려갈 수 있는 최소값                      │ 0         │ -9999 ~ 999999           │
+ │ max     │ 올라갈 수 있는 최대값                      │ 999999    │ -9999 ~ 999999           │
+ │ goal    │ 목표치. 0보다 크면 "3 / 10" 형태로 표시    │ 0         │ 0 ~ 999999 (0이면 미사용)│
+ │ icon    │ 라벨 앞 이모지 1글자. 빈 값이면 숨김       │ 💀        │ 이모지/글자 1개          │
+ │ id      │ 저장 슬롯 이름. 소스 2개를 따로 쓸 때 지정 │ (없음)    │ 아무 문자열 16자까지     │
+ ├─────────┼────────────────────────────────────────────┼───────────┼──────────────────────────┤
+ │ size    │ 기준 글자 크기 px (숫자 크기)              │ 64        │ 16 ~ 120                 │
+ │ accent  │ 포인트 색 hex. # 생략 가능 (예: 00ffa3)    │ 테마별    │ 3자리/6자리 hex          │
+ │ dark    │ 다크 모드 1 / 라이트 모드 0                │ 테마별    │ 1 또는 0                 │
+ │ theme   │ 색 프리셋                                  │ default   │ default news pastel minimal │
+ │ pos     │ 화면 안에서의 위치                         │ tl        │ tl tr tc bl br bc c      │
+ │ margin  │ 화면 가장자리 여백 px                      │ 48        │ 0 ~ 400                  │
+ │ credit  │ 1 표시 / 0 숨김 / 그 외 문자열은 문구 교체 │ 1         │ 1, 0, 임의 문자열        │
+ │ reset   │ 1이면 저장된 값을 무시하고 초기값부터 시작 │ 0         │ 1 또는 0                 │
+ └─────────┴────────────────────────────────────────────┴───────────┴──────────────────────────┘
+
+   pos 값 뜻 : tl=좌상단, tc=상단중앙, tr=우상단, bl=좌하단, bc=하단중앙, br=우하단, c=정중앙
+   theme 값 뜻 : default=기본 네온그린 / news=속보 레드 각진 느낌 / pastel=파스텔 핑크 라이트 / minimal=흑백 미니멀
+
+ [ 실제로 동작하는 예시 URL ]
+   1) 기본 데스카운트 (좌상단)
+      file:///C:/경로/counter.html?label=데스카운트&icon=💀
+
+   2) 속보 스타일 · 목표 10회 · 우상단 · 큼직하게
+      file:///C:/경로/counter.html?theme=news&label=오늘의%20사망&icon=🔥&goal=10&pos=tr&size=76
+
+   3) 파스텔 라이트 · 내기 카운터 · 5씩 증가 · 최대 100
+      file:///C:/경로/counter.html?theme=pastel&label=내기%20횟수&icon=🎲&value=0&step=5&max=100&goal=100&pos=bl
+
+   4) 숫자만 크게 (라벨/아이콘/크레딧 숨김, 정중앙)
+      file:///C:/경로/counter.html?label=&icon=&size=110&pos=c&credit=0
+
+   5) 저장된 값 초기화하고 다시 시작
+      file:///C:/경로/counter.html?label=데스카운트&value=0&reset=1
+
+   6) 카운터 두 개를 따로 쓰기 (브라우저 소스를 2개 만들고 각각 아래 URL)
+      file:///C:/경로/counter.html?label=데스&icon=💀&id=death&pos=tl
+      file:///C:/경로/counter.html?label=승리&icon=🏆&id=win&pos=tr&accent=ffd166
+
+ [ OBS에서 조작하는 법 ]  ★ 중요 ★
+   OBS는 방송에 나가는 화면 위에서는 마우스가 동작하지 않습니다.
+   소스 목록에서 이 브라우저 소스를 마우스 오른쪽 클릭 → "상호작용" 을 선택하면
+   따로 작은 창이 뜨는데, 그 창 안에서만 마우스와 키보드가 먹힙니다.
+
+   그래서 이 위젯의 조작 버튼은 "마우스를 올렸을 때(hover)만" 나타나도록 만들었습니다.
+   평소에는 opacity:0 이라 방송 화면에는 절대 보이지 않고,
+   상호작용 창에서 위젯 위에 마우스를 올리는 순간에만 스르륵 나타납니다.
+   버튼을 다 누른 뒤 상호작용 창을 닫으면 다시 깔끔하게 사라집니다.
+
+   ● 마우스 : 위젯 위에 올리면 위쪽에 [−] [+] [리셋] 버튼이 나타납니다.
+              (pos가 tl/tr/tc 처럼 위쪽이면 버튼이 카드 아래쪽에 나타납니다)
+   ● 키보드 (상호작용 창이 포커스된 상태에서) :
+       ↑  또는  +  또는  =   → step 만큼 증가
+       ↓  또는  -  또는  _   → step 만큼 감소
+       R                     → 초기값(value)으로 리셋 (한글 자판이면 ㄱ)
+
+   값은 브라우저 저장소(localStorage, 키 이름 "onairkit:counter:value")에 자동 저장됩니다.
+   OBS를 껐다 켜도, 새로고침을 해도 숫자가 그대로 남아 있습니다.
+   값을 완전히 처음으로 되돌리고 싶으면 URL 뒤에 &reset=1 을 붙여 한 번 불러오세요.
+   (저장소가 막혀 있는 환경이면 저장만 안 될 뿐 위젯은 그대로 동작합니다)
+
+   ※ 카운터를 두 개 이상 쓰려면 id 파라미터를 서로 다르게 주세요. 파일을 복사할 필요 없습니다.
+     예) ...counter.html?label=데스카운트&id=death   ←  키 "onairkit:counter:death:value"
+         ...counter.html?label=내기&id=bet          ←  키 "onairkit:counter:bet:value"
+     id 를 생략하면 키는 "onairkit:counter:value" 이고, 같은 URL 두 개는 값을 공유합니다.
+
+ [ 메모장으로 고치고 싶다면 ]
+   아래 스크립트 영역 맨 위의 CONFIG 부분만 고치면 됩니다. URL 파라미터를 쓰면 CONFIG보다 우선합니다.
+==========================================================================
+-->
+
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+  body{
+    font-family:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  :root{
+    --sc:1;               /* 화면 크기에 따른 배율 (JS가 계산) */
+    --sizepx:64;          /* 기준 글자 크기 (단위 없는 숫자) */
+    --marginpx:48;        /* 가장자리 여백 */
+    --radiuspx:14;        /* 모서리 라운드 */
+    --s:calc(var(--sizepx) * var(--sc) * 1px);
+    --m:calc(var(--marginpx) * var(--sc) * 1px);
+    --radius:calc(var(--radiuspx) * var(--sc) * 1px);
+    --accent:#00ffa3;
+    /* 액센트를 "글자 색"으로 쓸 때만 쓰는 가독성 보정 색 (JS가 계산).
+       예: 라이트 모드에서 네온그린 #00ffa3 은 흰 배경 대비 1.33:1 이라 사실상 안 보인다.
+       막대·테두리·칩 배경에는 보정 없는 --accent 를 그대로 쓴다. */
+    --accent-ink:#00ffa3;
+    --bar:rgba(18,19,24,.92);
+    --fg:#ffffff;
+    --fg2:rgba(255,255,255,.60);
+    --line:rgba(255,255,255,.14);
+    --chip:rgba(0,255,163,.16);
+    --border:rgba(255,255,255,.09);
+    --shadow:0 10px 30px rgba(0,0,0,.45);
+    --valshadow:0 3px 10px rgba(0,0,0,.5);   /* 숫자 그림자 (라이트에서 덮어씀) */
+    --ease:cubic-bezier(.2,.8,.2,1);
+  }
+  /* 라이트 모드에서는 숫자에 검은 글로우가 아니라 아주 옅은 그림자만 */
+  body.light{--valshadow:0 1px 0 rgba(0,0,0,.06)}
+
+  /* ── 화면 배치 (pos / margin) ───────────────────────────────── */
+  #stage{
+    position:fixed;inset:0;display:flex;padding:var(--m);
+    pointer-events:none;
+  }
+  body.p-tl #stage{justify-content:flex-start;align-items:flex-start}
+  body.p-tc #stage{justify-content:center;    align-items:flex-start}
+  body.p-tr #stage{justify-content:flex-end;  align-items:flex-start}
+  body.p-bl #stage{justify-content:flex-start;align-items:flex-end}
+  body.p-bc #stage{justify-content:center;    align-items:flex-end}
+  body.p-br #stage{justify-content:flex-end;  align-items:flex-end}
+  body.p-c  #stage{justify-content:center;    align-items:center}
+  /* 아래쪽 배치 + margin 0 이면 크레딧이 화면 밖으로 잘리므로 최소 여백을 확보 */
+  body:not(.nocredit).p-bl #stage,
+  body:not(.nocredit).p-bc #stage,
+  body:not(.nocredit).p-br #stage{padding-bottom:max(var(--m),22px)}
+
+  /* ── 크레딧 (온에어킷 공통 스펙 7번 · 5개 위젯 동일) ─────────── */
+  #wrap{position:relative}
+  #credit{position:absolute;right:2px;bottom:-17px;font-size:11px;font-weight:600;
+    letter-spacing:.06em;color:rgba(255,255,255,.34);
+    text-shadow:0 1px 3px rgba(0,0,0,.55);pointer-events:none;user-select:none;white-space:nowrap}
+  body.light #credit{color:rgba(0,0,0,.30);text-shadow:none}
+  body.nocredit #credit{display:none}
+  /* 위쪽 배치(tl/tr/tc)일 때는 크레딧을 카드 아래로 뒤집어 화면 밖 잘림 방지 */
+  body.top #credit{bottom:auto;top:calc(100% + 4px)}
+
+  #wrap{pointer-events:auto;display:inline-flex;flex-direction:column}
+
+  /* ── 카드 본체 ──────────────────────────────────────────────── */
+  .card{
+    position:relative;overflow:hidden;
+    display:flex;align-items:center;
+    gap:calc(var(--s) * .28);
+    font-size:var(--s);
+    padding:calc(var(--s) * .26) calc(var(--s) * .42);
+    background:var(--bar);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    backdrop-filter:blur(10px) saturate(1.15);
+    -webkit-backdrop-filter:blur(10px) saturate(1.15);
+    animation:enter .5s var(--ease) both;   /* 등장 애니메이션 1회만 */
+  }
+  @keyframes enter{
+    from{opacity:0;transform:translateY(10px) scale(.975)}
+    to  {opacity:1;transform:none}
+  }
+
+  /* news 테마 : 왼쪽 액센트 세로 바 */
+  .card.news{padding-left:calc(var(--s) * .56)}
+  .card.news::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;
+    width:calc(var(--s) * .1);min-width:4px;background:var(--accent);
+  }
+
+  /* 아이콘 칩 */
+  .icon{
+    flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+    width:calc(var(--s) * .82);height:calc(var(--s) * .82);
+    font-size:calc(var(--s) * .46);line-height:1;
+    background:var(--chip);border-radius:calc(var(--radius) * .72);
+    filter:drop-shadow(0 2px 4px rgba(0,0,0,.35));
+  }
+
+  /* 라벨 */
+  .label{
+    flex:0 1 auto;min-width:0;
+    max-width:calc(var(--s) * 4.4);
+    font-size:calc(var(--s) * .29);
+    font-weight:800;letter-spacing:.02em;line-height:1.25;
+    color:var(--fg);opacity:.92;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    text-shadow:0 2px 6px rgba(0,0,0,.45);
+  }
+  body.light .label{text-shadow:none}
+
+  /* 라벨과 숫자 사이 구분선 */
+  .sep{
+    flex:0 0 auto;width:1px;align-self:stretch;
+    margin:calc(var(--s) * .1) calc(var(--s) * .04);
+    background:var(--line);
+  }
+
+  /* 숫자 영역 */
+  .numwrap{flex:0 0 auto;display:flex;flex-direction:column;gap:calc(var(--s) * .1)}
+  .nums{display:flex;align-items:baseline;gap:calc(var(--s) * .14)}
+
+  .value{
+    font-size:1em;font-weight:800;line-height:1;
+    letter-spacing:-.01em;color:var(--fg);
+    font-variant-numeric:tabular-nums;
+    font-feature-settings:"tnum" 1,"lnum" 1;   /* 자릿수가 늘어도 폭이 안 흔들림 */
+    text-shadow:var(--valshadow);
+    display:inline-block;transform-origin:50% 60%;
+  }
+  .card.reached .value{color:var(--accent-ink)}
+  .card.reached{border-color:var(--accent)}
+
+  .goaltxt{
+    font-size:calc(var(--s) * .34);font-weight:700;line-height:1;
+    color:var(--fg2);font-variant-numeric:tabular-nums;
+    font-feature-settings:"tnum" 1;white-space:nowrap;
+  }
+
+  /* 목표 진행 바 */
+  .prog{
+    height:calc(var(--s) * .055);min-height:3px;width:100%;
+    background:var(--line);border-radius:999px;overflow:hidden;
+  }
+  .prog > i{
+    display:block;height:100%;width:0%;
+    background:var(--accent);border-radius:999px;
+    transition:width .45s var(--ease);
+  }
+
+  /* 값 변화 연출 : pop + 증가는 액센트 / 감소는 회색 톤 플래시 */
+  .value.pop{animation:pop .34s var(--ease)}
+  @keyframes pop{
+    0%{transform:scale(1)}
+    38%{transform:scale(1.13)}
+    100%{transform:scale(1)}
+  }
+  .value.up{animation:pop .34s var(--ease),flashUp .42s ease-out}
+  .value.down{animation:pop .34s var(--ease),flashDown .42s ease-out}
+  @keyframes flashUp{
+    0%{color:var(--accent-ink);text-shadow:0 0 calc(var(--s)*.3) var(--accent)}
+    100%{color:var(--fg);text-shadow:var(--valshadow)}
+  }
+  @keyframes flashDown{
+    0%{color:var(--fg2);text-shadow:none}
+    100%{color:var(--fg);text-shadow:var(--valshadow)}
+  }
+
+  /* 목표 도달 축하 : 테두리 글로우 1회
+     카드가 아닌 별도 레이어에 얹는다. 카드에 직접 걸면 등장 애니메이션이 다시 재생됨. */
+  .glowring{
+    position:absolute;inset:0;border-radius:var(--radius);
+    pointer-events:none;opacity:0;
+  }
+  .glowring.on{animation:glow 1.1s var(--ease) 1}
+  @keyframes glow{
+    0%  {opacity:0;box-shadow:0 0 0 0 var(--accent),inset 0 0 0 0 var(--accent)}
+    22% {opacity:1;box-shadow:0 0 calc(var(--s)*.42) calc(var(--s)*.05) var(--accent),inset 0 0 0 2px var(--accent)}
+    100%{opacity:0;box-shadow:0 0 0 0 var(--accent),inset 0 0 0 2px var(--accent)}
+  }
+
+  /* ── 조작 UI (공통 스펙 8번) ────────────────────────────────────
+     기본 opacity:0 + pointer-events:none → 방송 화면엔 절대 안 보임.
+     OBS "상호작용" 창에서 위젯에 마우스를 올렸을 때만 나타난다.
+     .ctrls 의 padding 이 카드와 버튼 사이의 빈 틈을 덮어주기 때문에
+     마우스가 카드에서 버튼으로 이동하는 도중에도 hover 가 끊기지 않는다. */
+  .ctrls{
+    position:absolute;left:0;bottom:100%;min-width:100%;
+    padding-bottom:10px;
+    display:flex;gap:calc(var(--s) * .12);
+    opacity:0;pointer-events:none;transform:translateY(5px);
+    transition:opacity .16s var(--ease),transform .16s var(--ease);
+  }
+  body.top .ctrls{bottom:auto;top:100%;padding-bottom:0;padding-top:24px;transform:translateY(-5px)}
+  #wrap:hover .ctrls{opacity:1;pointer-events:auto;transform:none}
+
+  .btn{
+    font-family:inherit;font-size:calc(var(--s) * .26);font-weight:800;line-height:1;
+    color:var(--fg);background:var(--bar);
+    border:1px solid var(--border);border-radius:calc(var(--radius) * .68);
+    padding:.55em .8em;min-width:2.5em;cursor:pointer;
+    box-shadow:var(--shadow);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    transition:color .12s var(--ease),border-color .12s var(--ease),transform .12s var(--ease);
+    white-space:nowrap;
+  }
+  .btn:hover{color:var(--accent-ink);border-color:var(--accent)}
+  .btn:active{transform:translateY(1px) scale(.96)}
+  .btn:focus{outline:none}
+  .btn.wide{min-width:0}
+
+  /* ── 모션 최소화 선호 시 ────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce){
+    .card{animation:none}
+    .glowring.on{animation:none}
+    .value.pop,.value.up,.value.down{animation:none}
+    .prog > i{transition:none}
+    .ctrls{transition:none;transform:none}
+    body.top .ctrls{transform:none}
+  }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="wrap">
+    <div class="card" id="card">
+      <div class="icon" id="icon"></div>
+      <div class="label" id="label"></div>
+      <div class="sep" id="sep"></div>
+      <div class="numwrap">
+        <div class="nums">
+          <span class="value" id="value">0</span>
+          <span class="goaltxt" id="goaltxt"></span>
+        </div>
+        <div class="prog" id="prog"><i id="progfill"></i></div>
+      </div>
+    </div>
+
+    <div class="glowring" id="glow"></div>
+
+    <div class="ctrls" id="ctrls">
+      <button class="btn" type="button" id="btnMinus" title="감소 (↓ 또는 -)">−</button>
+      <button class="btn" type="button" id="btnPlus"  title="증가 (↑ 또는 +)">+</button>
+      <button class="btn wide" type="button" id="btnReset" title="초기값으로 (R)">리셋</button>
+    </div>
+
+    <div id="credit">온에어킷</div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ==========================================================
+     CONFIG — 메모장으로 이 값만 고쳐도 동작합니다.
+     URL 파라미터를 쓰면 여기 값보다 URL 쪽이 우선합니다.
+     accent / dark 를 빈 문자열("")로 두면 theme 프리셋 기본값을 씁니다.
+     ========================================================== */
+  var CONFIG = {
+    label:  "데스카운트",   // 카운터 이름 (""이면 숨김)
+    value:  0,              // 초기값
+    step:   1,              // 증감 단위
+    min:    0,              // 최소값
+    max:    999999,         // 최대값
+    goal:   0,              // 목표치 (0이면 사용 안 함)
+    icon:   "💀",           // 라벨 앞 이모지 ("" 이면 숨김)
+    id:     "",             // 저장 슬롯 이름 (카운터를 2개 이상 쓸 때만 다르게 지정)
+
+    size:   64,             // 기준 글자 크기 px
+    accent: "",             // 포인트 색 hex ("" 이면 테마 기본)
+    dark:   "",             // 1 / 0 ("" 이면 테마 기본)
+    theme:  "default",      // default | news | pastel | minimal
+    pos:    "tl",           // tl tr tc bl br bc c
+    margin: 48,             // 가장자리 여백 px
+    credit: 1               // 1 표시 / 0 숨김 / 문자열이면 문구 교체
+  };
+
+  /* ==========================================================
+     테마 프리셋 (색 / 모서리 / 그림자만 다름. 레이아웃은 동일)
+     ========================================================== */
+  var THEMES = {
+    "default": {
+      accent: "#00ffa3", accentDark: "",
+      radius: 14, dark: true, alpha: 0.92,
+      barDark: "#121318", barLight: "#ffffff",
+      shadowDark: "0 10px 30px rgba(0,0,0,.45)",
+      shadowLight: "0 10px 26px rgba(20,24,40,.18)",
+      news: false
+    },
+    "news": {
+      accent: "#ff2d55", accentDark: "",
+      radius: 4, dark: true, alpha: 0.95,
+      barDark: "#0b1020", barLight: "#ffffff",
+      shadowDark: "0 8px 22px rgba(0,0,0,.55)",
+      shadowLight: "0 8px 20px rgba(11,16,32,.22)",
+      news: true
+    },
+    "pastel": {
+      accent: "#ff8fb1", accentDark: "",
+      radius: 22, dark: false, alpha: 0.96,
+      barDark: "#2a2028", barLight: "#fffaf6",
+      shadowDark: "0 18px 46px rgba(0,0,0,.45)",
+      shadowLight: "0 18px 44px rgba(255,143,177,.30)",
+      news: false
+    },
+    "minimal": {
+      accent: "#1a1a1a", accentDark: "#ededed",   // 다크에선 검정이 안 보이므로 밝게
+      radius: 8, dark: false, alpha: 0.94,
+      barDark: "#17181b", barLight: "#ffffff",
+      shadowDark: "0 4px 14px rgba(0,0,0,.40)",
+      shadowLight: "0 2px 8px rgba(0,0,0,.10)",
+      news: false
+    }
+  };
+
+  var THEME_LIST = ["default", "news", "pastel", "minimal"];
+  /* 5종 위젯 공통 순서. 값 목록이 같아야 문서·URL 빌더와 어긋나지 않는다 */
+  var POS_LIST = ["bl", "br", "tl", "tr", "tc", "bc", "c"];
+  var HEX_RE = /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+  /* ── 파라미터 읽기 · 검증 도우미 ───────────────────────────── */
+  var q;
+  try { q = new URLSearchParams(location.search); }
+  catch (e) { q = new URLSearchParams(""); }
+
+  function raw(name) { return q.has(name) ? q.get(name) : null; }
+
+  function toNum(x) {
+    var s = String(x === null || x === undefined ? "" : x).trim();
+    if (s === "") return NaN;
+    var n = Number(s);
+    return isFinite(n) ? n : NaN;
+  }
+
+  function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
+
+  // 숫자 파라미터: 없거나 이상하면 CONFIG 기본값, 그래도 이상하면 최소값. 항상 clamp.
+  function numParam(name, def, lo, hi) {
+    var d = toNum(def);
+    if (isNaN(d)) d = lo;
+    var r = raw(name);
+    var v = (r === null || r.trim() === "") ? d : toNum(r);
+    if (isNaN(v)) v = d;
+    v = Math.round(v);
+    return clamp(v, lo, hi);
+  }
+
+  // 문자열 파라미터: 제어문자 제거 + 길이 제한. 빈 값도 유효한 "숨김" 신호.
+  function strParam(name, def, maxLen) {
+    var r = raw(name);
+    var s = (r === null) ? String(def === null || def === undefined ? "" : def) : String(r);
+    s = s.replace(/[\u0000-\u001f\u007f]/g, "").trim();
+    if (s.length > maxLen) s = s.slice(0, maxLen);
+    return s;
+  }
+
+  // enum 파라미터: 화이트리스트 밖이면 기본값
+  function enumParam(name, def, list) {
+    var r = raw(name);
+    var v = (r === null) ? String(def) : String(r).trim().toLowerCase();
+    if (list.indexOf(v) >= 0) return v;
+    var d = String(def).trim().toLowerCase();
+    return list.indexOf(d) >= 0 ? d : list[0];
+  }
+
+  function boolParam(name, def) {
+    var r = raw(name);
+    if (r === null) return !!def;
+    var v = String(r).trim().toLowerCase();
+    if (v === "1" || v === "true" || v === "y") return true;
+    if (v === "0" || v === "false" || v === "n") return false;
+    return !!def;
+  }
+
+  // hex 색 검증 → "#rrggbb" 로 정규화. 실패하면 null.
+  function normHex(s) {
+    if (typeof s !== "string") return null;
+    var t = s.trim();
+    if (!HEX_RE.test(t)) return null;
+    var h = t.charAt(0) === "#" ? t.slice(1) : t;
+    if (h.length === 3) h = h.charAt(0) + h.charAt(0) + h.charAt(1) + h.charAt(1) + h.charAt(2) + h.charAt(2);
+    return "#" + h.toLowerCase();
+  }
+
+  function rgba(hex, a) {
+    var h = normHex(hex) || "#000000";
+    var r = parseInt(h.substr(1, 2), 16);
+    var g = parseInt(h.substr(3, 2), 16);
+    var b = parseInt(h.substr(5, 2), 16);
+    return "rgba(" + r + "," + g + "," + b + "," + a + ")";
+  }
+
+  // 상대 휘도(WCAG). 액센트를 글자색으로 써도 읽히는지 판단하는 데 쓴다.
+  function lum(hex) {
+    var h = normHex(hex) || "#000000";
+    function ch(v) { v = v / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+    return 0.2126 * ch(parseInt(h.substr(1, 2), 16)) +
+           0.7152 * ch(parseInt(h.substr(3, 2), 16)) +
+           0.0722 * ch(parseInt(h.substr(5, 2), 16));
+  }
+  // 두 색 섞기 (t=0 이면 a, t=1 이면 b)
+  function mixHex(a, b, t) {
+    var x = normHex(a) || "#000000", y = normHex(b) || "#000000", out = "#";
+    for (var i = 1; i < 7; i += 2) {
+      var v = Math.round(parseInt(x.substr(i, 2), 16) * (1 - t) + parseInt(y.substr(i, 2), 16) * t);
+      out += ("0" + clamp(v, 0, 255).toString(16)).slice(-2);
+    }
+    return out;
+  }
+  // 액센트를 "글자 색"으로 쓸 때의 보정.
+  // 라이트 모드의 #00ffa3 은 흰 배경 대비 1.33:1, 파스텔 #ff8fb1 은 2.06:1 이라 숫자가 안 보인다.
+  // 다크 모드에서 사용자가 accent=000000 같은 어두운 색을 넣어도 마찬가지(1.13:1).
+  // 배경 반대쪽(라이트=검정 / 다크=흰색)으로 조금씩 섞어 최소 대비를 확보한다.
+  function accentInk(hex, isDark) {
+    var target = isDark ? "#ffffff" : "#000000";
+    var need = isDark ? 0.18 : 0.25;          // 바 배경 기준 대략 3.5:1 이상
+    var c = normHex(hex) || target;
+    for (var t = 0; t <= 0.9; t += 0.05) {
+      c = mixHex(hex, target, t);
+      var L = lum(c);
+      if (isDark ? (L >= need) : (L <= need)) break;
+    }
+    return c;
+  }
+
+  // 이모지 1글자만 뽑기 (👨‍👩‍👧 같은 결합 이모지도 통째로)
+  function firstGrapheme(s) {
+    if (!s) return "";
+    try {
+      if (typeof Intl !== "undefined" && Intl.Segmenter) {
+        var seg = new Intl.Segmenter("ko", { granularity: "grapheme" });
+        var it = seg.segment(s)[Symbol.iterator]().next();
+        return it.done ? "" : it.value.segment;
+      }
+    } catch (e) { /* 미지원 브라우저는 아래로 */ }
+    var arr = Array.from ? Array.from(s) : s.split("");
+    return arr.length ? arr[0] : "";
+  }
+
+  /* ── 최종 설정값 계산 ──────────────────────────────────────── */
+  var themeName = enumParam("theme", CONFIG.theme, THEME_LIST);
+  var T = THEMES[themeName] || THEMES["default"];
+
+  // dark : theme 이 기본값을 정하고, 사용자가 명시하면 그것이 우선
+  var dark;
+  if (q.has("dark")) {
+    dark = boolParam("dark", T.dark);
+  } else if (CONFIG.dark === 1 || CONFIG.dark === "1" || CONFIG.dark === true) {
+    dark = true;
+  } else if (CONFIG.dark === 0 || CONFIG.dark === "0" || CONFIG.dark === false) {
+    dark = false;
+  } else {
+    dark = T.dark;
+  }
+
+  // accent : URL → CONFIG → theme 기본값 순서
+  var accent = null;
+  if (q.has("accent")) accent = normHex(q.get("accent"));
+  if (!accent) accent = normHex(CONFIG.accent);
+  if (!accent) accent = (dark && T.accentDark) ? T.accentDark : T.accent;
+
+  var size = numParam("size", CONFIG.size, 16, 120);
+  var margin = numParam("margin", CONFIG.margin, 0, 400);
+  var pos = enumParam("pos", CONFIG.pos, POS_LIST);
+
+  var label = strParam("label", CONFIG.label, 40);
+  // 32자까지 받아두고 첫 1글자만 쓴다. 👨‍👩‍👧‍👦 같은 결합 이모지는 길이가 길어서
+  // 여기서 너무 짧게 자르면 가족 이모지가 반토막 난다.
+  var icon = firstGrapheme(strParam("icon", CONFIG.icon, 32));
+
+  var vMin = numParam("min", CONFIG.min, -9999, 999999);
+  var vMax = numParam("max", CONFIG.max, -9999, 999999);
+  if (vMin > vMax) { var tmp = vMin; vMin = vMax; vMax = tmp; }   // 뒤집혀 들어와도 안 깨지게
+  var step = numParam("step", CONFIG.step, 1, 1000);
+  var goal = numParam("goal", CONFIG.goal, 0, 999999);
+  var initial = clamp(numParam("value", CONFIG.value, -9999, 999999), vMin, vMax);
+  var doReset = boolParam("reset", false);
+
+  // 저장 슬롯 id : 같은 파일을 브라우저 소스 두 개로 띄워도 숫자가 섞이지 않게 한다.
+  // id 를 안 주면 기존 키 "onairkit:counter:value" 를 그대로 쓴다.
+  // 한글 id 도 그대로 키에 쓴다(strParam 이 제어문자 제거·16자 제한을 이미 했다).
+  // 여기서 영문만 남기게 걸러내면 id=데스 / id=승리 가 둘 다 빈 값이 되어 오히려 값이 섞인다.
+  var slot = strParam("id", CONFIG.id, 16);
+  var STORE_KEY = "onairkit:counter" + (slot ? ":" + slot : "") + ":value";
+
+  /* ── DOM 참조 ──────────────────────────────────────────────── */
+  var body = document.body;
+  var elCard = document.getElementById("card");
+  var elIcon = document.getElementById("icon");
+  var elLabel = document.getElementById("label");
+  var elSep = document.getElementById("sep");
+  var elValue = document.getElementById("value");
+  var elGoal = document.getElementById("goaltxt");
+  var elProg = document.getElementById("prog");
+  var elFill = document.getElementById("progfill");
+  var elGlow = document.getElementById("glow");
+
+  /* ── 스타일 적용 ───────────────────────────────────────────── */
+  var root = document.documentElement;
+  root.style.setProperty("--sizepx", String(size));
+  root.style.setProperty("--marginpx", String(margin));
+  root.style.setProperty("--radiuspx", String(T.radius));
+  root.style.setProperty("--accent", accent);
+  root.style.setProperty("--accent-ink", accentInk(accent, dark));
+  root.style.setProperty("--bar", rgba(dark ? T.barDark : T.barLight, T.alpha));
+  root.style.setProperty("--fg", dark ? "#ffffff" : "#16181d");
+  root.style.setProperty("--fg2", dark ? "rgba(255,255,255,.60)" : "rgba(22,24,29,.52)");
+  root.style.setProperty("--line", dark ? "rgba(255,255,255,.14)" : "rgba(22,24,29,.13)");
+  root.style.setProperty("--chip", rgba(accent, dark ? 0.18 : 0.15));
+  root.style.setProperty("--border", dark ? "rgba(255,255,255,.09)" : "rgba(22,24,29,.08)");
+  root.style.setProperty("--shadow", dark ? T.shadowDark : T.shadowLight);
+
+  if (!dark) body.classList.add("light");
+  body.classList.add("p-" + pos);
+  if (pos === "tl" || pos === "tr" || pos === "tc") body.classList.add("top");
+  if (T.news) elCard.classList.add("news");
+
+  // 사용자 입력은 textContent 로만 (innerHTML 금지 · XSS 방지)
+  if (icon) { elIcon.textContent = icon; } else { elIcon.style.display = "none"; }
+  if (label) { elLabel.textContent = label; } else { elLabel.style.display = "none"; }
+  if (!icon && !label) elSep.style.display = "none";
+  if (goal <= 0) { elGoal.style.display = "none"; elProg.style.display = "none"; }
+
+  /* ── 크레딧 (공통 스펙 7번 · 5개 위젯 동일 코드) ────────────── */
+  const creditRaw = q.has("credit") ? q.get("credit") : String(CONFIG.credit);
+  if (creditRaw === "0") document.body.classList.add("nocredit");
+  else document.getElementById("credit").textContent =
+    (creditRaw === "1" || creditRaw === "") ? "온에어킷" : creditRaw;
+
+  /* ── 값 저장 / 복원 ────────────────────────────────────────── */
+  function storeGet() {
+    try { return window.localStorage.getItem(STORE_KEY); }
+    catch (e) { return null; }          // 저장소가 막혀 있어도 위젯은 계속 동작
+  }
+  function storeSet(v) {
+    try { window.localStorage.setItem(STORE_KEY, String(v)); }
+    catch (e) { /* 무시 */ }
+  }
+
+  var value = initial;
+  if (!doReset) {
+    var saved = toNum(storeGet());
+    if (!isNaN(saved)) value = clamp(Math.round(saved), vMin, vMax);
+  }
+  storeSet(value);
+
+  // 시작할 때 이미 목표를 넘긴 상태라면 축하 연출을 재생하지 않는다 (반복 재생 금지)
+  var goalArmed = (goal > 0 && value < goal);
+
+  /* ── 렌더 ──────────────────────────────────────────────────── */
+  function render() {
+    elValue.textContent = String(value);
+    if (goal > 0) {
+      elGoal.textContent = "/ " + goal;
+      var ratio = clamp(value / goal, 0, 1);
+      elFill.style.width = (ratio * 100).toFixed(2) + "%";
+      if (value >= goal) elCard.classList.add("reached");
+      else elCard.classList.remove("reached");
+    }
+  }
+
+  var popTimer = null;
+  function popAnim(dir) {
+    elValue.classList.remove("pop", "up", "down");
+    void elValue.offsetWidth;                       // 애니메이션 재시작용 리플로우
+    elValue.classList.add(dir > 0 ? "up" : (dir < 0 ? "down" : "pop"));
+    if (popTimer) clearTimeout(popTimer);
+    popTimer = setTimeout(function () {
+      elValue.classList.remove("pop", "up", "down");
+      popTimer = null;
+    }, 520);
+  }
+
+  var glowTimer = null;
+  function celebrate() {
+    elGlow.classList.remove("on");
+    void elGlow.offsetWidth;                        // 애니메이션 재시작용 리플로우
+    elGlow.classList.add("on");
+    if (glowTimer) clearTimeout(glowTimer);
+    glowTimer = setTimeout(function () {
+      elGlow.classList.remove("on");
+      glowTimer = null;
+    }, 1300);
+  }
+
+  function apply(next, dir) {
+    var c = clamp(Math.round(next), vMin, vMax);
+    var changed = (c !== value);
+    value = c;
+    storeSet(value);
+    render();
+    if (changed || dir === 0) popAnim(dir);
+
+    if (goal > 0) {
+      if (value >= goal) {
+        if (goalArmed) { goalArmed = false; celebrate(); }   // 도달 시 딱 1회
+      } else {
+        goalArmed = true;                                    // 다시 내려가면 재무장
+      }
+    }
+  }
+
+  function bump(sign) { apply(value + sign * step, sign); }
+  function resetAll() {
+    value = initial;
+    goalArmed = (goal > 0 && value < goal);
+    storeSet(value);
+    render();
+    popAnim(0);
+  }
+
+  /* ── 조작 : 버튼 ───────────────────────────────────────────── */
+  function wire(id, fn) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("click", function (e) {
+      e.preventDefault();
+      fn();
+      // 포커스가 남아 있으면 방송 화면에 버튼이 계속 보일 수 있어 즉시 해제
+      if (el.blur) el.blur();
+    });
+  }
+  wire("btnPlus", function () { bump(1); });
+  wire("btnMinus", function () { bump(-1); });
+  wire("btnReset", resetAll);
+
+  /* ── 조작 : 키보드 (OBS 상호작용 창 포커스 시) ─────────────── */
+  window.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    var k = e.key;
+    if (k === "ArrowUp" || k === "+" || k === "=") { e.preventDefault(); bump(1); }
+    else if (k === "ArrowDown" || k === "-" || k === "_") { e.preventDefault(); bump(-1); }
+    // e.code 를 함께 보면 한글 자판(ㄱ/ㄲ)·대문자 상관없이 R 자리가 항상 리셋이 된다
+    // (timer / roulette 과 동일한 처리)
+    else if (e.code === "KeyR" || k === "r" || k === "R" || k === "ㄱ" || k === "ㄲ") { e.preventDefault(); resetAll(); }
+  });
+
+  /* ── 레이아웃 재계산 (1920x1080 기준 → 창 크기에 맞춰 배율) ── */
+  var rafId = 0;
+  function relayout() {
+    rafId = 0;
+    var w = window.innerWidth || 1920;
+    var h = window.innerHeight || 1080;
+    var sc = Math.min(w / 1920, h / 1080);
+    if (!isFinite(sc) || sc <= 0) sc = 1;
+    sc = clamp(sc, 0.35, 1.6);
+    root.style.setProperty("--sc", String(Math.round(sc * 1000) / 1000));
+  }
+  function scheduleRelayout() {
+    if (rafId) return;
+    rafId = window.requestAnimationFrame ? window.requestAnimationFrame(relayout) : setTimeout(relayout, 16);
+  }
+  window.addEventListener("resize", scheduleRelayout);
+
+  /* ── 시작 ──────────────────────────────────────────────────── */
+  relayout();
+  render();
+
+  // 폰트가 늦게 로드되면 글자 폭이 달라지므로 한 번 더 재계산
+  try {
+    if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+      document.fonts.ready.then(function () { relayout(); });
+    }
+  } catch (e) { /* 무시 */ }
+})();
+</script>
+</body>
+</html>

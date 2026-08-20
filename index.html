@@ -1,0 +1,1599 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>온에어킷 — 치지직·SOOP 스트리머를 위한 무료 OBS 위젯</title>
+<meta name="description" content="텔롭·타이머·카운터·시참 대기열·룰렛. 전부 무료, 회원가입 없음, HTML 파일 하나로 OBS에 바로 올립니다.">
+<meta name="theme-color" content="#070a0f">
+<meta property="og:title" content="온에어킷 — 무료 OBS 위젯 모음">
+<meta property="og:description" content="치지직·SOOP 스트리머를 위한 무료 방송 위젯. 설정 폼에서 URL을 만들어 OBS에 붙여넣기만 하면 끝.">
+<meta property="og:type" content="website">
+<!--
+  Pretendard / SIL Open Font License 1.1
+  (c) 2021 Kil Hyung-jin, with Reserved Font Name 'Pretendard'
+  https://github.com/orioncactus/pretendard/blob/main/LICENSE
+  온에어킷은 Pretendard를 수정 없이 원본 그대로 CDN으로 불러옵니다.
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+/* ══════════════════════════════════════════════════════════════
+   온에어킷 랜딩 페이지 — 단일 파일 / 빌드 도구 없음 / 상대 경로만 사용
+   ══════════════════════════════════════════════════════════════ */
+
+:root{
+  --bg:#070a0f;
+  --bg-2:#0a0e16;
+  --panel:#0f1420;
+  --panel-2:#131a28;
+  --line:rgba(255,255,255,.09);
+  --line-2:rgba(255,255,255,.16);
+  --tx:#e9eef7;
+  --tx-2:#a4b0c4;
+  --tx-3:#6d7b91;
+  --ac:#00ffa3;
+  --ac-dim:rgba(0,255,163,.14);
+  --ac-line:rgba(0,255,163,.34);
+  --red:#ff3b5c;
+  --r-lg:20px;
+  --r-md:14px;
+  --r-sm:10px;
+  --max:1160px;
+  --ease:cubic-bezier(.22,.7,.28,1);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--tx);
+  font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Malgun Gothic","맑은 고딕",sans-serif;
+  font-size:16px;
+  line-height:1.65;
+  letter-spacing:-.01em;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+img,iframe{display:block}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3,h4{margin:0;line-height:1.28;letter-spacing:-.03em;font-weight:800}
+p{margin:0}
+code,.mono{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+
+.wrap{width:100%;max-width:var(--max);margin:0 auto;padding:0 20px}
+.sec{padding:88px 0}
+.sec-head{margin-bottom:34px}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:12.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ac);background:var(--ac-dim);border:1px solid var(--ac-line);
+  padding:5px 12px;border-radius:999px;margin-bottom:16px;
+}
+.sec-head h2{font-size:clamp(26px,4.4vw,38px)}
+.sec-head p{color:var(--tx-2);margin-top:12px;max-width:62ch;font-size:15.5px}
+
+/* ── 상단 바 ───────────────────────────────────────────── */
+.topbar{
+  position:sticky;top:0;z-index:60;
+  background:rgba(7,10,15,.78);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+}
+.topbar .wrap{display:flex;align-items:center;gap:14px;height:60px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:-.04em;font-size:18px;text-decoration:none}
+.brand .dot{
+  width:9px;height:9px;border-radius:50%;background:var(--red);
+  box-shadow:0 0 0 3px rgba(255,59,92,.18);
+  animation:blink 2.4s var(--ease) infinite;
+}
+@keyframes blink{0%,72%,100%{opacity:1}84%{opacity:.28}}
+.nav{margin-left:auto;display:flex;gap:4px;align-items:center}
+.nav a{
+  text-decoration:none;color:var(--tx-2);font-size:14px;font-weight:600;
+  padding:7px 12px;border-radius:9px;transition:color .18s,background .18s;
+}
+.nav a:hover{color:var(--tx);background:rgba(255,255,255,.05)}
+.nav .cta{color:#04120c;background:var(--ac);font-weight:800}
+.nav .cta:hover{background:#5cffc4;color:#04120c}
+@media (max-width:780px){ .nav a:not(.cta){display:none} }
+
+/* ── 히어로 ────────────────────────────────────────────── */
+.hero{position:relative;padding:82px 0 64px;overflow:hidden}
+.hero::before{
+  content:"";position:absolute;inset:-40% -20% auto -20%;height:620px;pointer-events:none;
+  background:
+    radial-gradient(58% 52% at 22% 42%,rgba(0,255,163,.16),transparent 68%),
+    radial-gradient(46% 46% at 78% 30%,rgba(94,124,255,.15),transparent 70%);
+  filter:blur(6px);
+}
+.hero::after{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.4;
+  background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+  background-size:64px 64px;
+  -webkit-mask-image:radial-gradient(70% 60% at 50% 20%,#000,transparent 75%);
+  mask-image:radial-gradient(70% 60% at 50% 20%,#000,transparent 75%);
+}
+.hero .wrap{position:relative;z-index:1;text-align:center}
+.onair{
+  display:inline-flex;align-items:center;gap:9px;
+  border:1px solid rgba(255,59,92,.4);background:rgba(255,59,92,.1);color:#ff8ea3;
+  font-size:12px;font-weight:800;letter-spacing:.2em;padding:6px 14px;border-radius:999px;
+}
+.onair i{width:7px;height:7px;border-radius:50%;background:var(--red);animation:blink 2.4s var(--ease) infinite}
+.logotype{
+  margin:26px 0 0;
+  font-size:clamp(48px,11vw,104px);
+  font-weight:900;letter-spacing:-.055em;line-height:1;
+  background:linear-gradient(180deg,#ffffff 6%,#9fffdc 58%,#00ffa3 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:0 0 70px rgba(0,255,163,.18);
+}
+.logo-en{
+  margin-top:10px;font-size:13px;letter-spacing:.42em;color:var(--tx-3);
+  text-transform:uppercase;font-weight:700;
+}
+.hero-lead{
+  margin:24px auto 0;max-width:60ch;color:var(--tx-2);
+  font-size:clamp(15.5px,2.1vw,18.5px);
+}
+.hero-lead b{color:var(--tx);font-weight:700}
+.badges{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:30px}
+.badge{
+  display:inline-flex;align-items:center;gap:9px;
+  background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+  border:1px solid var(--line-2);border-radius:999px;
+  padding:10px 18px 10px 14px;font-size:14px;font-weight:700;
+}
+.badge span{
+  width:22px;height:22px;border-radius:50%;flex:none;
+  display:grid;place-items:center;font-size:12px;
+  background:var(--ac-dim);color:var(--ac);border:1px solid var(--ac-line);
+}
+.hero-btns{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:36px}
+.hero-note{margin-top:22px;font-size:13px;color:var(--tx-3)}
+
+/* ── 버튼 ──────────────────────────────────────────────── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border:1px solid var(--line-2);background:rgba(255,255,255,.05);
+  color:var(--tx);border-radius:12px;padding:12px 20px;
+  font-size:14.5px;font-weight:700;text-decoration:none;cursor:pointer;
+  transition:transform .16s var(--ease),background .18s,border-color .18s,box-shadow .18s;
+}
+.btn:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.28);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.btn.primary{
+  background:linear-gradient(180deg,#00ffa3,#00d98a);color:#04120c;border-color:transparent;
+  box-shadow:0 10px 30px -12px rgba(0,255,163,.6);
+}
+.btn.primary:hover{background:linear-gradient(180deg,#5cffc4,#00e695);box-shadow:0 14px 34px -12px rgba(0,255,163,.7)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:9px 14px;font-size:13.5px;border-radius:10px}
+
+/* ── 위젯 카드 ─────────────────────────────────────────── */
+.cards{
+  display:grid;gap:18px;
+  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+}
+.card{
+  position:relative;display:flex;flex-direction:column;
+  background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;
+  transition:transform .22s var(--ease),border-color .22s,box-shadow .22s;
+}
+.card:hover{transform:translateY(-3px);border-color:var(--ac-line);box-shadow:0 22px 46px -26px rgba(0,255,163,.45)}
+.thumb{
+  position:relative;aspect-ratio:16/9;overflow:hidden;
+  border-bottom:1px solid var(--line);
+  background:
+    radial-gradient(110% 80% at 18% 12%,rgba(64,104,178,.4),transparent 62%),
+    radial-gradient(90% 74% at 86% 84%,rgba(178,72,118,.3),transparent 62%),
+    linear-gradient(158deg,#0b1020,#131b2d 46%,#070a12);
+}
+.thumb iframe{
+  position:absolute;top:0;left:0;width:1920px;height:1080px;border:0;
+  transform-origin:0 0;transform:scale(var(--s,.18));pointer-events:none;
+}
+.thumb .skeleton{
+  position:absolute;inset:0;display:grid;place-items:center;
+  color:var(--tx-3);font-size:12.5px;letter-spacing:.06em;
+}
+.card-body{padding:18px 20px 20px;display:flex;flex-direction:column;gap:10px;flex:1}
+.card-top{display:flex;align-items:center;gap:9px}
+.card-top h3{font-size:18px}
+.chip{
+  font-size:11px;font-weight:800;letter-spacing:.02em;padding:3px 9px;border-radius:999px;
+  background:var(--ac-dim);color:var(--ac);border:1px solid var(--ac-line);white-space:nowrap;
+}
+.card-body p{color:var(--tx-2);font-size:14px;flex:1}
+.card-acts{display:flex;gap:8px;margin-top:4px}
+.card-acts .btn{flex:1;padding:10px 12px;font-size:13.5px}
+
+/* ── URL 빌더 ──────────────────────────────────────────── */
+.builder{
+  background:linear-gradient(180deg,rgba(255,255,255,.035),transparent 40%),var(--panel);
+  border:1px solid var(--line);border-radius:24px;overflow:hidden;
+}
+.tabs{
+  display:flex;gap:6px;padding:12px;border-bottom:1px solid var(--line);
+  overflow-x:auto;scrollbar-width:thin;-webkit-overflow-scrolling:touch;
+}
+.tab{
+  flex:none;border:1px solid transparent;background:transparent;color:var(--tx-2);
+  padding:9px 16px;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;
+  transition:background .18s,color .18s,border-color .18s;white-space:nowrap;
+}
+.tab:hover{background:rgba(255,255,255,.05);color:var(--tx)}
+.tab[aria-selected="true"]{background:var(--ac-dim);color:var(--ac);border-color:var(--ac-line)}
+.tab:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+
+.builder-grid{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:0}
+@media (max-width:900px){ .builder-grid{grid-template-columns:1fr} }
+
+.panel-l{padding:22px;border-right:1px solid var(--line);min-width:0}
+.panel-r{padding:22px;min-width:0;display:flex;flex-direction:column;gap:16px}
+@media (max-width:900px){ .panel-l{border-right:0;border-bottom:1px solid var(--line)} }
+
+.panel-title{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}
+.panel-title h3{font-size:16px}
+.panel-title small{color:var(--tx-3);font-size:12.5px;font-weight:600}
+
+.fields{display:flex;flex-direction:column;gap:2px;max-height:min(64vh,620px);overflow-y:auto;padding-right:6px;margin-right:-6px}
+.fields::-webkit-scrollbar{width:8px}
+.fields::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:8px}
+@media (max-width:900px){ .fields{max-height:none;overflow:visible} }
+
+.field{padding:12px 0;border-bottom:1px dashed rgba(255,255,255,.07)}
+.field:last-child{border-bottom:0}
+.field-head{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.field-head label{font-size:13.5px;font-weight:700;cursor:pointer}
+.pname{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:11px;color:var(--tx-3);background:rgba(255,255,255,.05);
+  border:1px solid var(--line);border-radius:6px;padding:1px 6px;
+}
+.field-head .mark{
+  margin-left:auto;width:7px;height:7px;border-radius:50%;
+  background:transparent;transition:background .2s,box-shadow .2s;flex:none;
+}
+.field.on .field-head .mark{background:var(--ac);box-shadow:0 0 0 3px var(--ac-dim)}
+.help{margin-top:7px;font-size:12.3px;line-height:1.6;color:var(--tx-3)}
+
+.inp,select.inp{
+  width:100%;background:#080c14;border:1px solid var(--line-2);color:var(--tx);
+  border-radius:var(--r-sm);padding:9px 12px;font-size:14px;
+  transition:border-color .18s,box-shadow .18s;
+}
+.inp:focus,select.inp:focus{outline:0;border-color:var(--ac-line);box-shadow:0 0 0 3px var(--ac-dim)}
+.inp::placeholder{color:#4d5a6e}
+select.inp{
+  appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:34px;
+  background-image:linear-gradient(45deg,transparent 50%,#7c8a9e 50%),linear-gradient(135deg,#7c8a9e 50%,transparent 50%);
+  background-position:calc(100% - 17px) calc(50% + 1px),calc(100% - 12px) calc(50% + 1px);
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+}
+select.inp option{background:#0d131e;color:var(--tx)}
+
+.color-row{display:flex;gap:8px;align-items:center}
+.swatch{
+  width:42px;height:38px;flex:none;padding:0;border:1px solid var(--line-2);
+  border-radius:var(--r-sm);background:transparent;cursor:pointer;overflow:hidden;
+}
+.swatch::-webkit-color-swatch-wrapper{padding:3px}
+.swatch::-webkit-color-swatch{border:0;border-radius:7px}
+.swatch::-moz-color-swatch{border:0;border-radius:7px}
+.color-row .inp{flex:1;font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:.04em}
+
+.switch{display:inline-flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.switch input{position:absolute;opacity:0;width:0;height:0}
+.track{
+  width:46px;height:26px;border-radius:999px;background:#1a2231;border:1px solid var(--line-2);
+  position:relative;transition:background .2s var(--ease),border-color .2s;flex:none;
+}
+.knob{
+  position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;
+  background:#7c8a9e;transition:transform .2s var(--ease),background .2s;
+}
+.switch input:checked + .track{background:var(--ac-dim);border-color:var(--ac-line)}
+.switch input:checked + .track .knob{transform:translateX(20px);background:var(--ac)}
+.switch input:focus-visible + .track{outline:2px solid var(--ac);outline-offset:2px}
+.sw-txt{font-size:13.5px;color:var(--tx-2);font-weight:600}
+
+/* ── 미리보기 ──────────────────────────────────────────── */
+.stage-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.stage-head h3{font-size:16px;margin-right:auto}
+.seg{display:inline-flex;background:#0a0f18;border:1px solid var(--line);border-radius:11px;padding:3px;gap:2px}
+.seg button{
+  border:0;background:transparent;color:var(--tx-2);font-size:12.5px;font-weight:700;
+  padding:6px 12px;border-radius:8px;cursor:pointer;transition:background .18s,color .18s;
+}
+.seg button:hover{color:var(--tx)}
+.seg button[aria-pressed="true"]{background:rgba(255,255,255,.1);color:var(--tx)}
+.seg button:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+
+.stage{
+  position:relative;aspect-ratio:16/9;width:100%;overflow:hidden;
+  border:1px solid var(--line-2);border-radius:var(--r-md);
+}
+.stage iframe{
+  position:absolute;top:0;left:0;width:1920px;height:1080px;border:0;
+  transform-origin:0 0;transform:scale(var(--s,.36));
+}
+.stage.bg-dark{
+  background:
+    radial-gradient(120% 84% at 20% 8%,rgba(72,116,196,.42),transparent 62%),
+    radial-gradient(96% 72% at 86% 88%,rgba(196,74,124,.32),transparent 60%),
+    repeating-linear-gradient(102deg,rgba(255,255,255,.022) 0 2px,transparent 2px 9px),
+    linear-gradient(158deg,#0a0f1e,#141c2f 44%,#06090f);
+}
+.stage.bg-light{
+  background:
+    radial-gradient(96% 68% at 24% 12%,rgba(255,255,255,.96),transparent 62%),
+    radial-gradient(88% 78% at 82% 86%,rgba(255,208,150,.85),transparent 62%),
+    repeating-linear-gradient(102deg,rgba(0,0,0,.022) 0 2px,transparent 2px 9px),
+    linear-gradient(168deg,#dce7f5,#f5f8fc 48%,#c8d4e4);
+}
+.stage.bg-check{
+  background-color:#c2c9d3;
+  background-image:
+    linear-gradient(45deg,#8f99a8 25%,transparent 25%,transparent 75%,#8f99a8 75%),
+    linear-gradient(45deg,#8f99a8 25%,transparent 25%,transparent 75%,#8f99a8 75%);
+  background-size:36px 36px;background-position:0 0,18px 18px;
+}
+.stage-note{font-size:12.3px;color:var(--tx-3)}
+
+.url-box{
+  background:#080c14;border:1px solid var(--line-2);border-radius:var(--r-md);
+  padding:13px 15px;font-size:13px;line-height:1.75;
+  word-break:break-all;overflow-wrap:anywhere;color:var(--tx-2);
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  max-height:150px;overflow-y:auto;
+}
+.url-box b{color:var(--ac);font-weight:600}
+.url-label{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--tx-3);font-weight:700;margin-bottom:8px}
+.acts{display:flex;flex-wrap:wrap;gap:9px}
+.acts .btn{flex:1 1 auto;min-width:0;white-space:nowrap;padding-left:14px;padding-right:14px}
+@media (max-width:400px){ .acts .btn{font-size:13.5px;padding-left:10px;padding-right:10px} }
+.hint{
+  font-size:12.5px;color:var(--tx-3);background:rgba(255,255,255,.035);
+  border:1px solid var(--line);border-left:3px solid var(--ac-line);
+  border-radius:0 var(--r-sm) var(--r-sm) 0;padding:10px 13px;line-height:1.65;
+}
+.hint b{color:var(--tx-2)}
+
+/* ── OBS 안내 ──────────────────────────────────────────── */
+.guide{background:var(--panel);border:1px solid var(--line);border-radius:24px;overflow:hidden}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:0;padding:8px}
+@media (max-width:820px){ .steps{grid-template-columns:1fr} }
+.step{padding:22px;position:relative}
+.step + .step::before{
+  content:"";position:absolute;left:0;top:22px;bottom:22px;width:1px;background:var(--line);
+}
+@media (max-width:820px){
+  .step + .step::before{left:22px;right:22px;top:0;bottom:auto;width:auto;height:1px}
+}
+.step .n{
+  width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+  background:var(--ac-dim);border:1px solid var(--ac-line);color:var(--ac);
+  font-weight:900;font-size:14px;margin-bottom:12px;
+}
+.step h4{font-size:15.5px;margin-bottom:7px}
+.step p{color:var(--tx-2);font-size:13.8px}
+.step code{
+  background:rgba(0,255,163,.09);color:#8dffd0;border:1px solid rgba(0,255,163,.2);
+  border-radius:6px;padding:1px 6px;font-size:12.5px;word-break:break-all;
+}
+.warn{
+  margin:0 8px 8px;padding:16px 18px;border-radius:var(--r-md);
+  background:rgba(255,59,92,.07);border:1px solid rgba(255,59,92,.26);
+}
+.warn h4{font-size:14.5px;color:#ff8ea3;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.warn p{font-size:13.6px;color:var(--tx-2)}
+.warn code{
+  display:inline-block;background:rgba(0,0,0,.4);border:1px solid var(--line-2);
+  border-radius:6px;padding:2px 7px;font-size:12.5px;color:#ffc9d3;word-break:break-all;margin-top:2px;
+}
+
+/* ── FAQ ───────────────────────────────────────────────── */
+.faq{display:grid;gap:10px}
+details{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);
+  transition:border-color .2s,background .2s;
+}
+details[open]{border-color:var(--line-2);background:var(--panel-2)}
+summary{
+  list-style:none;cursor:pointer;padding:17px 20px;font-weight:700;font-size:15px;
+  display:flex;align-items:center;gap:12px;
+}
+summary::-webkit-details-marker{display:none}
+summary::after{
+  content:"";margin-left:auto;width:9px;height:9px;flex:none;
+  border-right:2px solid var(--tx-3);border-bottom:2px solid var(--tx-3);
+  transform:rotate(45deg) translateY(-2px);transition:transform .22s var(--ease);
+}
+details[open] summary::after{transform:rotate(225deg) translateY(-2px)}
+summary:focus-visible{outline:2px solid var(--ac);outline-offset:-2px;border-radius:var(--r-md)}
+.answer{padding:0 20px 19px;color:var(--tx-2);font-size:14.3px;line-height:1.75}
+.answer code{
+  background:rgba(0,255,163,.09);color:#8dffd0;border:1px solid rgba(0,255,163,.2);
+  border-radius:6px;padding:1px 6px;font-size:12.8px;
+}
+.answer p + p{margin-top:10px}
+
+/* ── 푸터 ──────────────────────────────────────────────── */
+footer{border-top:1px solid var(--line);background:var(--bg-2);padding:56px 0 40px;margin-top:40px}
+.foot-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:34px}
+@media (max-width:760px){ .foot-grid{grid-template-columns:1fr;gap:28px} }
+.foot-grid h4{font-size:14px;margin-bottom:12px;color:var(--tx)}
+.foot-grid p,.foot-grid li{color:var(--tx-3);font-size:13.5px}
+.foot-grid ul{list-style:none;padding:0;margin:0;display:grid;gap:7px}
+.foot-grid a{color:var(--tx-2);text-decoration:none;transition:color .18s}
+.foot-grid a:hover{color:var(--ac)}
+.todo{
+  display:inline-block;font-size:12px;font-weight:700;color:#ffcf6b;
+  background:rgba(255,207,107,.1);border:1px dashed rgba(255,207,107,.4);
+  border-radius:7px;padding:2px 9px;
+}
+.copy{
+  margin-top:34px;padding-top:22px;border-top:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  font-size:12.8px;color:var(--tx-3);
+}
+.copy .sp{margin-left:auto}
+
+/* ── 토스트 ────────────────────────────────────────────── */
+.toast{
+  position:fixed;left:50%;bottom:32px;transform:translate(-50%,20px);
+  background:#00ffa3;color:#04120c;font-weight:800;font-size:14px;
+  padding:12px 22px;border-radius:999px;z-index:200;
+  box-shadow:0 16px 40px -14px rgba(0,255,163,.7);
+  opacity:0;pointer-events:none;transition:opacity .22s,transform .22s var(--ease);
+}
+.toast.err{background:#ff3b5c;color:#fff;box-shadow:0 16px 40px -14px rgba(255,59,92,.7)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ── 등장 애니메이션 ───────────────────────────────────── */
+.rise{opacity:0;transform:translateY(16px);transition:opacity .6s var(--ease),transform .6s var(--ease)}
+.rise.in{opacity:1;transform:none}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{
+    animation-duration:.001ms !important;animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+  }
+  .rise{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap">
+    <a class="brand" href="#top"><span class="dot" aria-hidden="true"></span>온에어킷</a>
+    <nav class="nav">
+      <a href="#widgets">위젯</a>
+      <a href="#obs">OBS 설정법</a>
+      <a href="#faq">자주 묻는 질문</a>
+      <a href="#builder" class="cta">URL 만들기</a>
+    </nav>
+  </div>
+</div>
+
+<!-- ══════════════ 히어로 ══════════════ -->
+<header class="hero" id="top">
+  <div class="wrap">
+    <span class="onair"><i aria-hidden="true"></i>ON AIR</span>
+    <h1 class="logotype">온에어킷</h1>
+    <div class="logo-en">onairkit</div>
+    <p class="hero-lead">
+      치지직 · SOOP 스트리머를 위한 <b>무료 OBS 위젯 모음</b>.<br>
+      텔롭, 타이머, 카운터, 시참 대기열, 룰렛 — 설정 폼에서 만든 주소를
+      OBS 브라우저 소스에 붙여넣으면 끝입니다.
+    </p>
+
+    <div class="badges">
+      <span class="badge"><span aria-hidden="true">₩</span>전부 무료</span>
+      <span class="badge"><span aria-hidden="true">✓</span>회원가입 없음</span>
+      <span class="badge"><span aria-hidden="true">1</span>파일 하나면 끝</span>
+    </div>
+
+    <div class="hero-btns">
+      <a class="btn primary" href="#builder">내 위젯 URL 만들기</a>
+      <a class="btn ghost" href="#widgets">위젯 5종 둘러보기</a>
+    </div>
+
+    <p class="hero-note">
+      월 구독료 대신 0원. 서버도 로그인도 없고, HTML 파일 하나가 브라우저 안에서 전부 처리합니다.
+    </p>
+  </div>
+</header>
+
+<!-- ══════════════ 위젯 목록 ══════════════ -->
+<section class="sec" id="widgets">
+  <div class="wrap">
+    <div class="sec-head rise">
+      <span class="eyebrow">Widgets</span>
+      <h2>지금 쓸 수 있는 위젯 5종</h2>
+      <p>아래 썸네일은 이미지가 아니라 <b>실제로 돌아가고 있는 위젯</b>입니다. 카드를 누르면 그 위젯의 설정 화면으로 이동합니다.</p>
+    </div>
+    <div class="cards" id="cards"></div>
+  </div>
+</section>
+
+<!-- ══════════════ URL 빌더 ══════════════ -->
+<section class="sec" id="builder">
+  <div class="wrap">
+    <div class="sec-head rise">
+      <span class="eyebrow">URL Builder</span>
+      <h2>설정하고, 복사하고, 붙여넣기</h2>
+      <p>값을 바꾸면 아래 미리보기와 주소가 바로 바뀝니다. 기본값 그대로인 항목은 주소에서 자동으로 빠져서 URL이 짧게 유지됩니다. 설정은 이 브라우저에 저장되니 나중에 다시 와도 그대로예요.</p>
+    </div>
+
+    <div class="builder rise">
+      <div class="tabs" id="tabs" role="tablist" aria-label="위젯 선택"></div>
+
+      <div class="builder-grid">
+        <div class="panel-l">
+          <div class="panel-title">
+            <h3 id="formTitle">설정</h3>
+            <small id="formCount"></small>
+          </div>
+          <div class="fields" id="fields"></div>
+        </div>
+
+        <div class="panel-r">
+          <div class="stage-head">
+            <h3>라이브 미리보기</h3>
+            <div class="seg" role="group" aria-label="미리보기 배경">
+              <button type="button" data-bg="dark" aria-pressed="true">어두운 배경</button>
+              <button type="button" data-bg="light" aria-pressed="false">밝은 배경</button>
+              <button type="button" data-bg="check" aria-pressed="false">체크무늬</button>
+            </div>
+          </div>
+
+          <div class="stage bg-dark" id="stage">
+            <iframe id="preview" title="위젯 미리보기"></iframe>
+          </div>
+          <p class="stage-note">
+            실제 방송 화면(1920 × 1080)을 축소해 보여줍니다. 체크무늬는 배경이 투명하다는 뜻이라, OBS에서는 게임 화면이 그대로 비칩니다.
+            미리보기 안을 직접 클릭·조작해 볼 수도 있어요.
+          </p>
+
+          <div>
+            <div class="url-label">완성된 OBS 브라우저 소스 주소</div>
+            <div class="url-box" id="urlBox"></div>
+          </div>
+
+          <div class="acts">
+            <button type="button" class="btn primary" id="copyBtn">URL 복사</button>
+            <a class="btn" id="dlBtn" download>HTML 파일 다운로드</a>
+            <button type="button" class="btn ghost" id="resetBtn">초기화</button>
+          </div>
+
+          <p class="hint">
+            <b>다운로드한 파일에 이 설정을 그대로 쓰려면?</b> OBS에서 “로컬 파일” 체크를 <b>해제</b>하고,
+            URL 칸에 <code>file:///</code> 로 시작하는 내 PC 경로 + 물음표 뒤 설정값을 직접 넣어야 합니다.
+            아래 <a href="#obs" style="color:var(--ac)">OBS에 넣는 법 → 로컬 파일</a> 탭에 그대로 따라 할 수 있게 적어 뒀어요.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ OBS 안내 ══════════════ -->
+<section class="sec" id="obs">
+  <div class="wrap">
+    <div class="sec-head rise">
+      <span class="eyebrow">Setup</span>
+      <h2>OBS에 넣는 법 · 3단계</h2>
+      <p>인터넷 주소를 그대로 쓰는 방법과, 파일을 내 PC에 받아 쓰는 방법이 있습니다. 처음이라면 <b>온라인 URL</b> 쪽이 훨씬 쉽습니다.</p>
+    </div>
+
+    <div class="guide rise">
+      <div class="tabs" id="obsTabs" role="tablist" aria-label="설치 방식 선택">
+        <button class="tab" type="button" role="tab" data-obs="url" aria-selected="true">온라인 URL 방식 (추천)</button>
+        <button class="tab" type="button" role="tab" data-obs="file" aria-selected="false">로컬 파일 방식</button>
+      </div>
+
+      <div id="obsUrl" role="tabpanel">
+        <div class="steps">
+          <div class="step">
+            <div class="n">1</div>
+            <h4>주소 복사하기</h4>
+            <p>위 <b>URL 빌더</b>에서 원하는 대로 설정한 다음 <b>[URL 복사]</b> 버튼을 누릅니다. <code>https://…/widgets/telop.html?theme=news</code> 같은 주소가 복사됩니다.</p>
+          </div>
+          <div class="step">
+            <div class="n">2</div>
+            <h4>브라우저 소스 추가</h4>
+            <p>OBS 소스 목록에서 <b>[+] → 브라우저</b>를 고르고 이름을 정합니다. <b>“로컬 파일” 체크는 끈 상태</b>로 두세요.</p>
+          </div>
+          <div class="step">
+            <div class="n">3</div>
+            <h4>URL 칸에 붙여넣기</h4>
+            <p>URL 칸에 붙여넣고 <b>폭 1920 / 높이 1080</b>을 입력한 뒤 확인. 화면에서 크기와 위치는 마음대로 조절하면 됩니다.</p>
+          </div>
+        </div>
+        <div class="warn" style="background:rgba(0,255,163,.06);border-color:var(--ac-line)">
+          <h4 style="color:var(--ac)">이 방식의 장점</h4>
+          <p>파일을 받아 둘 필요가 없고, 위젯이 개선되면 OBS를 껐다 켜는 것만으로 최신 버전이 적용됩니다. 대신 방송 PC가 인터넷에 연결돼 있어야 합니다.</p>
+        </div>
+      </div>
+
+      <div id="obsFile" role="tabpanel" hidden>
+        <div class="steps">
+          <div class="step">
+            <div class="n">1</div>
+            <h4>HTML 파일 받기</h4>
+            <p>위 빌더의 <b>[HTML 파일 다운로드]</b>를 누르면 <code>telop.html</code> 같은 파일 하나가 저장됩니다. 이 파일 하나가 위젯 전부입니다.</p>
+          </div>
+          <div class="step">
+            <div class="n">2</div>
+            <h4>브라우저 소스 추가</h4>
+            <p>OBS에서 <b>[+] → 브라우저</b> → <b>“로컬 파일” 체크</b> → <b>찾아보기</b>로 방금 받은 파일을 선택합니다.</p>
+          </div>
+          <div class="step">
+            <div class="n">3</div>
+            <h4>1920 × 1080 맞추기</h4>
+            <p>폭 1920 / 높이 1080을 입력하고 확인. 인터넷이 끊겨도 동작하고, 파일을 메모장으로 열어 맨 위 <code>CONFIG</code> 값을 직접 고쳐도 됩니다.</p>
+          </div>
+        </div>
+        <div class="warn">
+          <h4><span aria-hidden="true">⚠</span> 중요 — 로컬 파일 + 설정값을 같이 쓰려면</h4>
+          <p>
+            OBS의 <b>“로컬 파일” 체크를 켜 두면 물음표 뒤 설정값(<code style="margin-top:0">?theme=news</code>)이 전부 무시됩니다.</b>
+            받은 파일에 빌더에서 만든 설정을 적용하려면 이렇게 하세요.
+          </p>
+          <p style="margin-top:12px">
+            ① <b>“로컬 파일” 체크를 해제</b>합니다. → ② URL 칸에 <code>file:///</code> 로 시작하는 내 PC 경로를 직접 입력합니다.<br>
+            <code>file:///C:/onairkit/widgets/telop.html?theme=news&amp;label=속보</code>
+          </p>
+          <p style="margin-top:12px">
+            경로는 파일 탐색기 주소창에서 복사한 뒤 <b>역슬래시(\)를 슬래시(/)로 바꾸면</b> 됩니다.
+            폴더 이름에 띄어쓰기가 있어 잘 안 되면 그 부분만 <code style="margin-top:0">%20</code> 으로 바꿔 보세요.
+            빌더에서 복사한 주소의 <b>물음표 뒷부분만 떼어다 붙여도</b> 똑같이 동작합니다.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ FAQ ══════════════ -->
+<section class="sec" id="faq">
+  <div class="wrap">
+    <div class="sec-head rise">
+      <span class="eyebrow">FAQ</span>
+      <h2>자주 묻는 질문</h2>
+    </div>
+
+    <div class="faq rise">
+      <details open>
+        <summary>정말 전부 무료인가요? 나중에 유료로 바뀌나요?</summary>
+        <div class="answer">
+          <p>네, 지금 올라와 있는 위젯은 전부 무료입니다. 결제 페이지도, 로그인도, 사용 기간 제한도 없습니다.</p>
+          <p>가능한 이유는 단순합니다. 이 위젯들은 <b>서버를 전혀 쓰지 않습니다.</b> 계산도 저장도 전부 스트리머의 브라우저 안에서 일어나니 운영비가 0원이고, 그래서 구독료를 받을 이유가 없습니다. 저희는 화면 구석의 작은 크레딧과, 그걸 보고 오시는 <b>커스텀 제작 문의</b>로 먹고삽니다. 이미 배포된 파일을 나중에 유료로 잠그는 일은 없습니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>구석에 뜨는 “온에어킷” 크레딧, 꺼도 되나요?</summary>
+        <div class="answer">
+          <p><b>네, 꺼도 됩니다.</b> 설정에서 크레딧 항목을 <code>0</code> 으로 바꾸거나 주소 끝에 <code>&amp;credit=0</code> 을 붙이면 사라집니다. 다른 문구를 넣으면 그 문구로 바뀌기도 합니다(예: <code>credit=내채널이름</code>).</p>
+          <p>강제하지 않는 이유는, 크레딧을 남겨 주시는 분들 덕분에 다른 스트리머분들이 이걸 찾아오시기 때문입니다. 부담 없이 켜 두실 수 있다면 정말 큰 도움이 됩니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>후원 알림(도네이션 알림)도 만들어 주시나요?</summary>
+        <div class="answer">
+          <p>후원 알림은 <b>트윕(Twip)</b> 이나 <b>투네이션(Toonation)</b> 을 쓰시는 걸 권합니다. 두 곳 다 무료 알림 위젯을 제공하고, OBS 브라우저 소스로 넣는 방식이라 온에어킷 위젯과 나란히 겹쳐 써도 아무 문제 없습니다.</p>
+          <p>온에어킷은 <b>결제·정산을 일절 처리하지 않습니다.</b> 후원금을 받아 스트리머에게 전달하려면 전자금융거래법상 등록된 사업자여야 하고, 그건 저희가 할 수 있는 영역이 아닙니다. 돈이 오가는 부분은 검증된 서비스에 맡기고, 저희는 화면을 예쁘게 만드는 일에 집중하겠습니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>업데이트는 어떻게 받나요?</summary>
+        <div class="answer">
+          <p><b>온라인 URL 방식</b>으로 넣으셨다면 아무것도 안 하셔도 됩니다. OBS를 껐다 켜거나 브라우저 소스를 새로고침하면 최신 버전이 적용됩니다.</p>
+          <p><b>로컬 파일 방식</b>이라면 이 페이지에서 파일을 다시 받아 덮어쓰면 됩니다. 파라미터 이름과 동작은 되도록 바꾸지 않을 계획이라, 예전에 만들어 둔 주소는 그대로 쓰실 수 있습니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>우리 채널 색·폰트에 맞춘 전용 디자인도 되나요?</summary>
+        <div class="answer">
+          <p>됩니다. 색·모서리·폰트·애니메이션까지 채널 컨셉에 맞춘 <b>커스텀 주문 제작</b>을 받고 있습니다. 여기 없는 새로운 위젯(예: 랭킹 보드, 룰렛 변형, 시즌 한정 오버레이) 제작도 가능합니다.</p>
+          <p>다만 서버가 필요한 기능(채팅 자동 연동, 후원 연동, 여러 PC 간 값 동기화)은 이 프로젝트의 “서버 없음” 원칙상 만들지 않습니다. 만들어 달라는 요청은 <b>디스코드</b>로 주세요. 겹치는 요청이 쌓이면 그게 다음에 만들 위젯이 됩니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>버그를 발견했어요 / 위젯이 화면에 안 보여요</summary>
+        <div class="answer">
+          <p>먼저 아래 3가지를 확인해 보세요. 대부분 여기서 해결됩니다.</p>
+          <p>
+            ① 브라우저 소스 크기가 <b>1920 × 1080</b> 인지 (작게 잡으면 위젯이 화면 밖으로 밀려납니다)<br>
+            ② 로컬 파일인데 설정이 안 먹는다면 <b>“로컬 파일” 체크가 켜져 있는지</b> (위 OBS 안내 참고)<br>
+            ③ 값이 이상하게 저장돼 있다면 주소 끝에 <code>&amp;reset=1</code> 을 붙여 한 번 새로고침
+          </p>
+          <p>그래도 안 되면 <b>사용한 주소 전체 + OBS 버전 + 어떤 화면이 보이는지</b>를 적어 <b>디스코드</b>나 GitHub 이슈로 보내 주세요. 재현만 되면 대부분 빠르게 고칩니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>치지직·SOOP 말고 트위치·유튜브에서도 쓸 수 있나요?</summary>
+        <div class="answer">
+          <p>네. 이 위젯들은 특정 플랫폼에 붙는 게 아니라 <b>OBS의 브라우저 소스</b>에 올라가는 웹 페이지입니다. OBS(또는 브라우저 소스를 지원하는 프로그램 — Streamlabs Desktop, XSplit 등)를 쓰신다면 어느 플랫폼으로 송출하든 똑같이 동작합니다.</p>
+          <p>기본 디자인만 국내 방송 자막 감성에 맞춰져 있을 뿐입니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>카운터 숫자나 대기열은 OBS를 껐다 켜도 남아 있나요?</summary>
+        <div class="answer">
+          <p>남아 있습니다. 카운터 값·대기열 명단·룰렛 남은 항목·타이머 진행 상태는 브라우저 저장소에 자동으로 기록돼서, 새로고침하거나 OBS를 재시작해도 이어집니다.</p>
+          <p>처음 상태로 되돌리고 싶을 때는 주소 끝에 <code>&amp;reset=1</code> 을 붙이거나, 빌더의 “저장값 초기화” 스위치를 켜면 됩니다. 저장은 그 PC의 그 브라우저 안에만 있으니, 방송 PC를 바꾸면 값은 따라오지 않습니다.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 푸터 ══════════════ -->
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a class="brand" href="#top" style="margin-bottom:12px"><span class="dot" aria-hidden="true"></span>온에어킷</a>
+        <p>치지직 · SOOP 스트리머를 위한 무료 OBS 위젯 모음. 서버 없이, 로그인 없이, 파일 하나로.</p>
+      </div>
+
+      <div>
+        <h4>문의 · 커뮤니티</h4>
+        <p style="margin-bottom:10px">버그 제보, 새 위젯 요청, 채널 전용 커스텀 제작 문의 — 전부 디스코드에서 받습니다. 편하게 들어와서 물어보세요.</p>
+        <!-- 디스코드 초대 링크는 discord/index.html 한 곳에서만 관리한다. 여기는 손대지 말 것 -->
+        <ul>
+          <li><a href="discord/">온에어킷 디스코드 참여</a> <span class="todo">초대 링크 입력 필요</span></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4>링크</h4>
+        <ul>
+          <!-- ★배포 전 필수★ 아래 https://github.com/onairkit/onairkit.github.io 를 실제 저장소 주소로 교체 (예: https://github.com/onairkit/onairkit.github.io) -->
+          <li><a href="https://github.com/onairkit/onairkit.github.io">GitHub 저장소</a></li>
+          <li><a href="https://github.com/onairkit/onairkit.github.io/issues">버그 신고 (GitHub 이슈)</a></li>
+          <li><a href="#obs">OBS 설정법</a></li>
+          <li><a href="#faq">자주 묻는 질문</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="copy">
+      <span>© 2026 온에어킷 (onairkit)</span>
+      <span>·</span>
+      <span>위젯은 개인 · 상업 방송에서 자유롭게 쓰실 수 있습니다. 위젯 파일 자체를 재판매하거나 유료 패키지에 포함하는 것만 삼가 주세요.</span>
+      <span class="sp">Pretendard 폰트 사용 (SIL OFL 1.1)</span>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ══════════════════════════════════════════════════════════════
+   1. 위젯 데이터
+      params 는 각 위젯이 실제로 지원하는 파라미터 그대로다.
+      ko = 화면에 보여줄 한글 이름 (표시용일 뿐, 위젯에 전달되지 않음)
+   ══════════════════════════════════════════════════════════════ */
+
+var POS = {bl:'좌하단',br:'우하단',tl:'좌상단',tr:'우상단',tc:'상단 중앙',bc:'하단 중앙',c:'정중앙'};
+var THEME = {
+  'default':'default · 네온 그린',
+  'news':'news · 속보 레드',
+  'pastel':'pastel · 파스텔 핑크',
+  'minimal':'minimal · 흑백 미니멀'
+};
+var DARK = {'auto':'테마 기본값','':'테마 기본값','1':'어두운 배경','0':'밝은 배경'};
+var THEME_ACCENT = {'default':'#00ffa3','news':'#ff2d55','pastel':'#ff8fb1','minimal':'#1a1a1a'};
+
+var WIDGETS = [
+{
+  id:'telop', file:'telop.html', name:'텔롭', tag:'자막 바',
+  line:'화면 아래 예능·뉴스 스타일 자막 바. 여러 문구를 자동으로 돌리고, 뉴스처럼 옆으로 흐르는 티커 모드도 있습니다.',
+  demo:'theme=news&label=속보&mode=ticker&speed=150&pos=bc&text=오늘 밤 9시 시청자 참여전|디스코드 링크는 채팅창 고정',
+  params:[
+    {name:'text', ko:'문구', kind:'text', def:'온에어킷 텔롭 위젯 — URL 뒤에 ?text=원하는 문구 를 붙여보세요|여러 문장은 세로줄 기호로 구분하면 순서대로 돌아갑니다|테마는 ?theme=news / pastel / minimal',
+     desc:'표시할 문구. 세로줄(|)로 나누면 여러 문구가 순서대로 순환합니다. 비우면 기본 데모 문구를 씁니다.'},
+    {name:'label', ko:'라벨 칩', kind:'text', def:'공지',
+     desc:'자막 바 왼쪽 칩 문구(공지·LIVE·속보 등). 비워 두면 칩이 숨겨집니다.'},
+    {name:'accent', ko:'포인트 색', kind:'color', def:'',
+     desc:'포인트 색 hex(# 생략 가능). 3자리·6자리만 인식하고 틀리면 테마 기본 액센트를 씁니다.'},
+    {name:'mode', ko:'전환 방식', kind:'select', def:'slide', options:['slide','fade','ticker'],
+     optKo:{slide:'slide · 위아래로 밀기', fade:'fade · 투명도만', ticker:'ticker · 좌우로 흐름'},
+     desc:'문구 전환 방식. slide=위아래로 밀기, fade=투명도만, ticker=뉴스처럼 좌우로 흐름.'},
+    {name:'interval', ko:'전환 간격', kind:'number', def:'6', min:'2', max:'60',
+     desc:'문구 전환 간격(초). slide·fade 모드에서만 쓰입니다.'},
+    {name:'size', ko:'글자 크기', kind:'number', def:'34', min:'16', max:'120',
+     desc:'기준 글자 크기(px). 칩·바 높이·여백이 모두 이 값에 비례합니다.'},
+    {name:'dark', ko:'바 명암', kind:'select', def:'', options:['','1','0'],
+     desc:'바 명암. 1=어두운 바, 0=밝은 바. 비우면 테마별 기본값(default·news는 다크, pastel·minimal은 라이트).'},
+    {name:'speed', ko:'흐름 속도', kind:'number', def:'120', min:'40', max:'400',
+     desc:'ticker 모드에서 문구가 흐르는 속도(px/초). ticker 모드에서만 쓰입니다.'},
+    {name:'theme', ko:'테마', kind:'select', def:'default', options:['default','news','pastel','minimal'],
+     desc:'색·모서리·그림자 프리셋. theme이 dark와 accent의 기본값을 정합니다.'},
+    {name:'pos', ko:'화면 위치', kind:'select', def:'bl', options:['bl','br','tl','tr','tc','bc','c'],
+     desc:'화면 안에서의 위치. ticker 모드에서는 좌우 구분이 무시되고 위·아래만 반영됩니다.'},
+    {name:'margin', ko:'가장자리 여백', kind:'number', def:'48', min:'0', max:'400',
+     desc:'화면 가장자리 여백(px). 20 미만이면서 아래쪽 배치이면 크레딧이 화면 밖으로 잘릴 수 있습니다.'},
+    {name:'credit', ko:'크레딧', kind:'text', def:'1',
+     desc:'오른쪽 아래 크레딧. 1=온에어킷 표시, 0=숨김, 그 외 문자열이면 그 문구로 교체됩니다.'},
+    {name:'reset', ko:'저장값 초기화', kind:'bool', def:'0',
+     desc:'켜면 저장된 상태(일시정지 여부·현재 문구 번호)를 무시하고 처음부터 시작합니다.'}
+  ]
+},
+{
+  id:'timer', file:'timer.html', name:'타이머', tag:'카운트다운',
+  line:'“방송 시작까지 5분”, 휴식 타이머, 경과 시간, 현재 시각까지 한 파일로 해결합니다.',
+  demo:'minutes=5&label=쉬는 시간&done=곧 돌아옵니다&theme=news&size=88&onend=up',
+  params:[
+    {name:'mode', ko:'타이머 종류', kind:'select', def:'after', options:['until','after','up','clock'],
+     optKo:{until:'until · 목표 시각까지', after:'after · 지금부터 N분', up:'up · 경과 시간', clock:'clock · 현재 시각'},
+     desc:'타이머 종류. until=목표 시각까지 남은 시간, after=지금부터 N분, up=경과 시간 카운트업, clock=현재 시각만 표시'},
+    {name:'until', ko:'목표 시각', kind:'text', def:'20:00',
+     desc:'mode=until 일 때 목표 시각. "20:00" "20:00:00" "2026-08-18T20:00" "2026-08-18 20:00:00" 형식. 시:분만 쓰면 오늘 그 시각이고 이미 지났으면 자동으로 다음 날로 넘어갑니다. 형식이 이상하면 조용히 after 모드로 동작합니다.'},
+    {name:'minutes', ko:'카운트다운 분', kind:'number', def:'10', min:'0.1', max:'1440',
+     desc:'mode=after 일 때 카운트다운 분. 소수 가능(예: 0.5)'},
+    {name:'label', ko:'설명 문구', kind:'text', def:'방송 시작까지',
+     desc:'타이머 위에 뜨는 문구. 빈 값이면 숨김. mode=up / clock 에서 값을 안 주면 각각 "경과 시간" / "현재 시각" 으로 자동 대체됩니다.'},
+    {name:'done', ko:'종료 문구', kind:'text', def:'잠시 후 시작합니다',
+     desc:'종료 시 설명 문구 자리에 표시할 문구. 빈 값이면 기존 문구를 유지합니다.'},
+    {name:'onend', ko:'종료 후 동작', kind:'select', def:'freeze', options:['freeze','hide','up'],
+     optKo:{freeze:'freeze · 00:00 유지', hide:'hide · 서서히 사라짐', up:'up · 초과 시간(+00:12)'},
+     desc:'종료 후 동작. freeze=00:00 유지, hide=위젯이 서서히 사라짐, up=종료 시각부터 초과 시간으로 전환'},
+    {name:'format', ko:'시간 표기', kind:'select', def:'auto', options:['auto','ms','hms','m'],
+     optKo:{auto:'auto · 상황에 맞게', ms:'ms · 항상 mm:ss', hms:'hms · 항상 h:mm:ss', m:'m · 분만 표시'},
+     desc:'시간 표기. auto=1시간 넘으면 h:mm:ss 아니면 mm:ss, ms=항상 mm:ss(90:00 처럼 60분 초과도 그대로), hms=항상 h:mm:ss, m=분만 표시. mode=clock 에서는 ms/hms 면 HH:MM:SS 그 외에는 HH:MM'},
+    {name:'bar', ko:'진행 바', kind:'bool', def:'1',
+     desc:'남은 시간 진행 바 표시. mode=up / clock 에는 남은 시간 개념이 없어 켜도 표시되지 않습니다.'},
+    {name:'size', ko:'글자 크기', kind:'number', def:'72', min:'16', max:'120',
+     desc:'기준 글자 크기(px). 숫자 크기이며 라벨·여백·진행 바 두께가 여기에 비례합니다.'},
+    {name:'accent', ko:'포인트 색', kind:'color', def:'',
+     desc:'포인트 색 hex(# 생략 가능, 3자리/6자리). 비우면 theme 기본 액센트를 씁니다(default #00ffa3 / news #ff2d55 / pastel #ff8fb1 / minimal #1a1a1a, 다크에선 #ededed).'},
+    {name:'dark', ko:'바 명암', kind:'select', def:'', options:['','1','0'],
+     desc:'1=어두운 바 / 0=밝은 바. 비우면 theme 기본값(default·news 는 다크, pastel·minimal 은 라이트)을 씁니다.'},
+    {name:'theme', ko:'테마', kind:'select', def:'default', options:['default','news','pastel','minimal'],
+     desc:'색·모서리·그림자 프리셋. dark 와 accent 의 기본값을 정합니다.'},
+    {name:'pos', ko:'화면 위치', kind:'select', def:'c', options:['bl','br','tl','tr','tc','bc','c'],
+     desc:'위젯 위치. 상단(좌상·우상·상단중앙)이면 크레딧이 자동으로 아래로 뒤집힙니다.'},
+    {name:'margin', ko:'가장자리 여백', kind:'number', def:'48', min:'0', max:'400',
+     desc:'화면 가장자리 여백(px). 위젯 최대 폭도 이 값에 맞춰 줄어듭니다(정중앙은 여백 대신 최대 폭에만 반영).'},
+    {name:'credit', ko:'크레딧', kind:'text', def:'1',
+     desc:'1=크레딧 "온에어킷" 표시 / 0=숨김 / 그 외 문자열이면 그 문구로 교체됩니다.'},
+    {name:'reset', ko:'저장값 초기화', kind:'bool', def:'0',
+     desc:'켜면 저장된 남은 시간·일시정지 상태를 무시하고 처음부터 시작합니다.'}
+  ]
+},
+{
+  id:'counter', file:'counter.html', name:'카운터', tag:'데스카운트',
+  line:'데스카운트 · 승패 · 내기 횟수. 값이 저장돼서 새로고침하거나 OBS를 껐다 켜도 그대로입니다.',
+  demo:'theme=news&label=오늘의 사망&icon=🔥&goal=10&value=7&pos=tr&size=76',
+  params:[
+    {name:'label', ko:'카운터 이름', kind:'text', def:'데스카운트',
+     desc:'카운터 이름. 빈 값이면 라벨을 숨깁니다. 40자까지.'},
+    {name:'value', ko:'초기값', kind:'number', def:'0', min:'-9999', max:'999999',
+     desc:'초기값(리셋 버튼/R 키가 돌아가는 값). 저장값이 있으면 저장값이 우선하고, 최소·최대 범위로 잘립니다.'},
+    {name:'step', ko:'증감 단위', kind:'number', def:'1', min:'1', max:'1000',
+     desc:'버튼/키보드 한 번에 움직이는 증감 단위.'},
+    {name:'min', ko:'최소값', kind:'number', def:'0', min:'-9999', max:'999999',
+     desc:'내려갈 수 있는 최소값. 최대값보다 크게 주면 자동으로 서로 바뀝니다.'},
+    {name:'max', ko:'최대값', kind:'number', def:'999999', min:'-9999', max:'999999',
+     desc:'올라갈 수 있는 최대값.'},
+    {name:'goal', ko:'목표치', kind:'number', def:'0', min:'0', max:'999999',
+     desc:"목표치. 0보다 크면 '7 / 10' 표시와 진행 바가 나오고, 도달 시 1회만 글로우 연출이 재생됩니다. 0이면 미사용."},
+    {name:'icon', ko:'아이콘', kind:'text', def:'💀',
+     desc:'라벨 앞 이모지. 여러 글자를 넣어도 첫 1글자만 씁니다(가족 이모지 같은 결합 문자도 통째로 인식). 빈 값이면 숨김.'},
+    {name:'id', ko:'저장 슬롯 이름', kind:'text', def:'',
+     desc:'카운터를 2개 이상 띄울 때 서로 다르게 지정하면 값이 섞이지 않습니다(예: death, 승리). 생략하면 기존 키를 씁니다. 16자까지.'},
+    {name:'reset', ko:'저장값 초기화', kind:'bool', def:'0',
+     desc:'켜면 저장된 값을 무시하고 초기값부터 다시 시작합니다.'},
+    {name:'size', ko:'글자 크기', kind:'number', def:'64', min:'16', max:'120',
+     desc:'기준 글자 크기 px(숫자 크기). 라벨·아이콘·여백이 여기에 비례합니다.'},
+    {name:'accent', ko:'포인트 색', kind:'color', def:'',
+     desc:'포인트 색 hex, # 생략 가능(3자리/6자리). 비우면 테마 기본색(default #00ffa3 / news #ff2d55 / pastel #ff8fb1 / minimal #1a1a1a, 다크에선 #ededed). 글자로 쓰일 때는 배경 대비를 위해 자동 보정됩니다.'},
+    {name:'dark', ko:'배경 명암', kind:'select', def:'', options:['','1','0'],
+     desc:'1=다크 / 0=라이트. 비우면 theme이 결정합니다(default·news는 다크, pastel·minimal은 라이트).'},
+    {name:'theme', ko:'테마', kind:'select', def:'default', options:['default','news','pastel','minimal'],
+     desc:'색 프리셋. default=네온그린, news=속보 레드에 왼쪽 세로 바와 각진 모서리, pastel=파스텔 핑크 라이트, minimal=흑백 미니멀.'},
+    {name:'pos', ko:'화면 위치', kind:'select', def:'tl', options:['bl','br','tl','tr','tc','bc','c'],
+     desc:'화면 안 위치. 상단 배치면 크레딧과 조작 버튼이 카드 아래로 자동으로 뒤집힙니다.'},
+    {name:'margin', ko:'가장자리 여백', kind:'number', def:'48', min:'0', max:'400',
+     desc:'화면 가장자리 여백 px. 하단 배치에서는 크레딧이 잘리지 않도록 최소 22px가 보장됩니다.'},
+    {name:'credit', ko:'크레딧', kind:'text', def:'1',
+     desc:"1이면 '온에어킷' 표시, 0이면 숨김, 그 외 문자열을 주면 크레딧 문구를 그 문자열로 교체합니다."}
+  ]
+},
+{
+  id:'queue', file:'queue.html', name:'시참 대기열', tag:'시청자 참여',
+  line:'시청자 참여 순서를 화면에 띄우고, 방송 중에 직접 추가·완료합니다. (채팅 자동 연동 없이 수동 관리)',
+  demo:'title=오늘의 시참&names=구름빵|밤톨이|초코칩|감자전|물감|햇살|바다&max=5&theme=news&pos=bl&size=32',
+  params:[
+    {name:'title', ko:'제목', kind:'text', def:'시참 대기열',
+     desc:'제목 문구. 빈 값이면 제목 줄(제목+인원수) 전체가 숨겨집니다. 60자까지.'},
+    {name:'names', ko:'초기 명단', kind:'text', def:'고구마조아|밤샘코딩|초코라떼|픽셀사냥꾼|참치마요',
+     desc:'초기 대기열 명단. 세로줄(|)로 구분. 최대 200명, 닉네임 1개당 80자까지.'},
+    {name:'max', ko:'표시 인원', kind:'number', def:'5', min:'1', max:'20',
+     desc:"화면에 보여줄 최대 인원. 넘치면 아래에 '외 N명'으로 표시됩니다."},
+    {name:'numbered', ko:'순번 표시', kind:'bool', def:'1',
+     desc:'각 줄 왼쪽에 순번 숫자 칩을 표시할지 여부.'},
+    {name:'current', ko:'현재 차례 강조', kind:'bool', def:'1',
+     desc:'맨 위(현재 차례) 항목을 액센트 색으로 강조할지 여부.'},
+    {name:'reset', ko:'저장값 초기화', kind:'bool', def:'0',
+     desc:'켜면 저장된 대기열을 무시하고 초기 명단으로 시작합니다.'},
+    {name:'size', ko:'글자 크기', kind:'number', def:'30', min:'16', max:'120',
+     desc:'기준 글자 크기(px). 위젯 전체 크기가 이 값에 비례해 커집니다.'},
+    {name:'accent', ko:'포인트 색', kind:'color', def:'',
+     desc:'포인트 색 hex(# 생략 가능, 3자리/6자리). 비우면 테마의 기본 액센트 색을 씁니다.'},
+    {name:'dark', ko:'배경 명암', kind:'select', def:'', options:['','1','0'],
+     desc:'1=어두운 배경 / 0=밝은 배경. 비우면 테마가 정한 기본값(default·news는 다크, pastel·minimal은 라이트)을 씁니다.'},
+    {name:'theme', ko:'테마', kind:'select', def:'default', options:['default','news','pastel','minimal'],
+     desc:'색 프리셋. default=형광 그린/라운드14, news=속보 레드/각진 4px+왼쪽 세로바, pastel=핑크/라운드22 라이트, minimal=먹색/라운드8 라이트.'},
+    {name:'pos', ko:'화면 위치', kind:'select', def:'tr', options:['bl','br','tl','tr','tc','bc','c'],
+     desc:'위젯 화면 위치.'},
+    {name:'margin', ko:'가장자리 여백', kind:'number', def:'48', min:'0', max:'400',
+     desc:'화면 가장자리 여백(px). 정중앙에서는 적용되지 않습니다.'},
+    {name:'credit', ko:'크레딧', kind:'text', def:'1',
+     desc:"1=크레딧 '온에어킷' 표시 / 0=숨김 / 그 외 문자열이면 그 문구로 교체."}
+  ]
+},
+{
+  id:'roulette', file:'roulette.html', name:'룰렛', tag:'뽑기',
+  line:'벌칙 · 메뉴 · 시청자 뽑기용 원판. 클릭하면 돌고, 당첨 결과가 원판 아래에 크게 뜹니다.',
+  demo:'items=치킨|피자|족발|마라탕|초밥|제육덮밥&title=오늘 저녁 뭐 먹지&theme=news&diameter=520&duration=6',
+  params:[
+    {name:'items', ko:'룰렛 항목', kind:'text', def:'치킨|피자|족발|마라탕|초밥|제육덮밥',
+     desc:'룰렛 항목을 세로줄(|)로 구분. 2~12개(초과분은 앞 12개만, 항목당 80자까지). 2개 미만이면 기본 목록으로 되돌아갑니다.'},
+    {name:'title', ko:'제목', kind:'text', def:'돌려돌려 룰렛',
+     desc:'원판 위 제목 칩. 60자까지이며 빈 값을 주면 제목을 숨깁니다.'},
+    {name:'duration', ko:'회전 시간', kind:'number', def:'5', min:'2', max:'15',
+     desc:'원판이 도는 시간(초).'},
+    {name:'diameter', ko:'원판 지름', kind:'number', def:'420', min:'200', max:'900',
+     desc:'원판 지름(px).'},
+    {name:'remove', ko:'당첨 항목 제거', kind:'bool', def:'0',
+     desc:'켜면 당첨된 항목을 다음 회전 때 제거해 중복 없이 뽑습니다(남은 항목은 브라우저에 저장).'},
+    {name:'result', ko:'결과 패널', kind:'bool', def:'1',
+     desc:'켜면 원판 아래에 당첨 결과 패널을 크게 표시합니다.'},
+    {name:'reset', ko:'저장값 초기화', kind:'bool', def:'0',
+     desc:'켜면 저장된 진행 상태를 무시하고 처음 항목부터 시작합니다.'},
+    {name:'size', ko:'글자 크기', kind:'number', def:'26', min:'16', max:'120',
+     desc:'기준 글자 크기(px). 제목·결과 글자 크기가 함께 따라가며, 항목 글자는 조각 폭에 맞춰 자동으로 더 줄어들 수 있습니다.'},
+    {name:'accent', ko:'포인트 색', kind:'color', def:'',
+     desc:'포인트 색 hex(# 생략 가능, 3자리/6자리). 원판 조각 색상환의 기준색도 됩니다. 비우면 테마 기본색을 씁니다.'},
+    {name:'dark', ko:'배경 명암', kind:'select', def:'', options:['','1','0'],
+     desc:'1=다크 / 0=라이트. 비우면 테마 기본(default·news=다크, pastel·minimal=라이트).'},
+    {name:'theme', ko:'테마', kind:'select', def:'default', options:['default','news','pastel','minimal'],
+     desc:'색 프리셋. dark 와 accent 의 기본값을 정하며, 직접 지정하면 그쪽이 우선입니다.'},
+    {name:'pos', ko:'화면 위치', kind:'select', def:'c', options:['bl','br','tl','tr','tc','bc','c'],
+     desc:'화면 내 위젯 위치. 이 위젯만 기본값이 정중앙입니다.'},
+    {name:'margin', ko:'가장자리 여백', kind:'number', def:'48', min:'0', max:'400',
+     desc:'화면 가장자리 여백(px). 정중앙에서는 위치 대신 자동 축소 배율 계산에만 쓰입니다.'},
+    {name:'credit', ko:'크레딧', kind:'text', def:'1',
+     desc:'1=크레딧 표시 / 0=숨김 / 그 외 문자열이면 크레딧 문구를 그 문자열로 교체.'}
+  ]
+}
+];
+
+/* ══════════════════════════════════════════════════════════════
+   2. 유틸
+   ══════════════════════════════════════════════════════════════ */
+
+var $ = function(s, r){ return (r||document).querySelector(s); };
+var STORE_KEY = 'onairkit:builder:v1';
+
+/* URL 에서 깨지는 문자만 인코딩한다. 한글과 세로줄(|)은 읽기 좋게 그대로 둔다. */
+var UNSAFE = /[\u0000-\u0020\u007f"#%&'+<=>?\\^`{}\[\]]/g;
+function enc(s){
+  return String(s).replace(UNSAFE, function(c){
+    return '%' + c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0');
+  });
+}
+
+/* hex 정규화: '#0f0' / '00FFA3' → '0f0' / '00ffa3'. 형식이 틀리면 빈 문자열 */
+function normHex(v){
+  var s = String(v == null ? '' : v).trim().replace(/^#/, '');
+  return /^([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(s) ? s.toLowerCase() : '';
+}
+function hex6(v){
+  var s = normHex(v);
+  if(!s) return '';
+  if(s.length === 3) s = s[0]+s[0]+s[1]+s[1]+s[2]+s[2];
+  return '#' + s;
+}
+function clampNum(v, min, max){
+  var n = parseFloat(v);
+  if(!isFinite(n)) return null;
+  if(min !== undefined && min !== '' && n < parseFloat(min)) n = parseFloat(min);
+  if(max !== undefined && max !== '' && n > parseFloat(max)) n = parseFloat(max);
+  return n;
+}
+function el(tag, cls, txt){
+  var n = document.createElement(tag);
+  if(cls) n.className = cls;
+  if(txt != null) n.textContent = txt;
+  return n;
+}
+function byId(id){
+  for(var i=0;i<WIDGETS.length;i++){ if(WIDGETS[i].id === id) return WIDGETS[i]; }
+  return null;
+}
+function widgetPath(w){ return 'widgets/' + w.file; }
+
+/* 이 페이지가 놓인 폴더 주소. GitHub Pages 하위 경로에서도, file:// 에서도 동작한다. */
+function baseDir(){
+  var h = location.href.split('#')[0].split('?')[0];
+  return h.slice(0, h.lastIndexOf('/') + 1);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   3. 상태 (localStorage 저장)
+   ══════════════════════════════════════════════════════════════ */
+
+function defaultsOf(w){
+  var o = {};
+  w.params.forEach(function(p){ o[p.name] = String(p.def); });
+  return o;
+}
+
+var state = { widget: WIDGETS[0].id, bg: 'dark', values: {} };
+
+function loadState(){
+  var raw = null;
+  try{ raw = localStorage.getItem(STORE_KEY); }catch(e){ raw = null; }
+  var saved = null;
+  if(raw){ try{ saved = JSON.parse(raw); }catch(e){ saved = null; } }
+
+  WIDGETS.forEach(function(w){ state.values[w.id] = defaultsOf(w); });
+
+  if(saved && typeof saved === 'object'){
+    if(saved.widget && byId(saved.widget)) state.widget = saved.widget;
+    if(saved.bg === 'dark' || saved.bg === 'light' || saved.bg === 'check') state.bg = saved.bg;
+    if(saved.values && typeof saved.values === 'object'){
+      WIDGETS.forEach(function(w){
+        var sv = saved.values[w.id];
+        if(!sv || typeof sv !== 'object') return;
+        w.params.forEach(function(p){
+          if(!Object.prototype.hasOwnProperty.call(sv, p.name) || sv[p.name] == null) return;
+          var v = String(sv[p.name]);
+          /* 예전에 저장된 값이 지금 옵션 목록에 없으면 버린다.
+             (안 버리면 select 가 빈칸으로 뜨고, 없는 값이 URL 에 그대로 실린다) */
+          if(p.kind === 'select' && (p.options || []).indexOf(v) < 0) return;
+          if(p.kind === 'bool' && v !== '0' && v !== '1') return;
+          state.values[w.id][p.name] = v;
+        });
+      });
+    }
+  }
+}
+
+var saveTimer = null;
+function saveState(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function(){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){ /* 시크릿 모드 등 — 무시 */ }
+  }, 300);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   4. URL 만들기 — 기본값과 같은 값은 빼서 짧게 유지
+   ══════════════════════════════════════════════════════════════ */
+
+function activeParams(w){
+  var vals = state.values[w.id] || {};
+  var out = [];
+  w.params.forEach(function(p){
+    var v = vals[p.name];
+    if(v == null) return;
+    v = String(v);
+
+    if(p.kind === 'color'){
+      var h = normHex(v);
+      if(!h) return;                                  /* 비었거나 형식 오류 → 테마 기본색 사용 */
+      if(h === normHex(p.def)) return;                /* 테마/위젯 기본색과 같음 → 생략 */
+      out.push({ name: p.name, value: h });
+      return;
+    }
+    if(v === String(p.def)) return;                   /* 기본값 그대로 → 생략 */
+    out.push({ name: p.name, value: v });
+  });
+  return out;
+}
+
+function queryOf(w){
+  return activeParams(w).map(function(kv){ return kv.name + '=' + enc(kv.value); }).join('&');
+}
+function relUrl(w){
+  var q = queryOf(w);
+  return widgetPath(w) + (q ? '?' + q : '');
+}
+function absUrl(w){
+  return baseDir() + relUrl(w);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   5. iframe 축소 배율 (1920×1080 을 그릇 폭에 맞춘다)
+   ══════════════════════════════════════════════════════════════ */
+
+var fitTargets = [];
+function registerFit(box){
+  fitTargets.push(box);
+  fit(box);
+}
+function fit(box){
+  var w = box.clientWidth;
+  if(w > 0) box.style.setProperty('--s', (w / 1920).toFixed(5));
+}
+function fitAll(){ fitTargets.forEach(fit); }
+
+if(window.ResizeObserver){
+  var ro = new ResizeObserver(function(entries){
+    entries.forEach(function(e){ fit(e.target); });
+  });
+  var _register = registerFit;
+  registerFit = function(box){ _register(box); ro.observe(box); };
+}else{
+  window.addEventListener('resize', fitAll);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   6. 위젯 카드
+   ══════════════════════════════════════════════════════════════ */
+
+function buildCards(){
+  var host = $('#cards');
+  var lazy = [];
+
+  WIDGETS.forEach(function(w){
+    var card = el('article', 'card rise');
+
+    var thumb = el('div', 'thumb');
+    var skel = el('div', 'skeleton', '미리보기 불러오는 중…');
+    var fr = document.createElement('iframe');
+    fr.title = w.name + ' 미리보기';
+    fr.setAttribute('loading', 'lazy');
+    fr.setAttribute('scrolling', 'no');
+    fr.setAttribute('tabindex', '-1');
+    fr.setAttribute('aria-hidden', 'true');
+    fr.dataset.src = widgetPath(w) + '?' + w.demo + '&reset=1';
+    /* src 가 없는 iframe 은 about:blank 를 불러오며 load 를 한 번 발생시킨다.
+       그때 스켈레톤을 지워 버리면 "불러오는 중" 문구가 한 번도 안 보이고 빈 상자만 남는다.
+       실제 위젯 주소가 들어간 뒤의 load 에서만 지운다. */
+    fr.addEventListener('load', function(){ if(fr.getAttribute('src')) skel.remove(); });
+    thumb.appendChild(skel);
+    thumb.appendChild(fr);
+    card.appendChild(thumb);
+    registerFit(thumb);
+    lazy.push(fr);
+
+    var body = el('div', 'card-body');
+    var top = el('div', 'card-top');
+    top.appendChild(el('h3', null, w.name));
+    top.appendChild(el('span', 'chip', w.tag));
+    body.appendChild(top);
+    body.appendChild(el('p', null, w.line));
+
+    var acts = el('div', 'card-acts');
+    var pick = el('button', 'btn sm', '이 위젯 설정하기');
+    pick.type = 'button';
+    pick.addEventListener('click', function(){
+      selectWidget(w.id);
+      var b = document.getElementById('builder');
+      if(b) b.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    var open = el('a', 'btn sm ghost', '새 창에서 보기');
+    open.href = widgetPath(w) + '?' + w.demo;
+    open.target = '_blank';
+    open.rel = 'noopener';
+    acts.appendChild(pick);
+    acts.appendChild(open);
+    body.appendChild(acts);
+
+    card.appendChild(body);
+    host.appendChild(card);
+  });
+
+  /* 화면에 들어올 때만 실제로 로드 */
+  if(window.IntersectionObserver){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(!e.isIntersecting) return;
+        var f = e.target;
+        if(!f.src && f.dataset.src) f.src = f.dataset.src;
+        io.unobserve(f);
+      });
+    }, { rootMargin: '250px' });
+    lazy.forEach(function(f){ io.observe(f); });
+  }else{
+    lazy.forEach(function(f){ f.src = f.dataset.src; });
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   7. 위젯 선택 탭
+   ══════════════════════════════════════════════════════════════ */
+
+function buildTabs(){
+  var host = $('#tabs');
+  WIDGETS.forEach(function(w){
+    var b = el('button', 'tab', w.name);
+    b.type = 'button';
+    b.setAttribute('role', 'tab');
+    b.dataset.w = w.id;
+    b.addEventListener('click', function(){ selectWidget(w.id); });
+    host.appendChild(b);
+  });
+}
+function paintTabs(){
+  var tabs = $('#tabs').children;
+  for(var i = 0; i < tabs.length; i++){
+    tabs[i].setAttribute('aria-selected', tabs[i].dataset.w === state.widget ? 'true' : 'false');
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   8. 설정 폼 만들기
+   ══════════════════════════════════════════════════════════════ */
+
+function optionLabel(p, v){
+  if(p.optKo && Object.prototype.hasOwnProperty.call(p.optKo, v)) return p.optKo[v];
+  if(p.name === 'pos' && POS[v]) return v + ' · ' + POS[v];
+  if(p.name === 'theme' && THEME[v]) return THEME[v];
+  if(p.name === 'dark' && Object.prototype.hasOwnProperty.call(DARK, v)) return DARK[v];
+  return v === '' ? '(기본값)' : v;
+}
+
+function themeAccentOf(w){
+  var t = (state.values[w.id] || {})['theme'] || 'default';
+  return THEME_ACCENT[t] || THEME_ACCENT['default'];
+}
+
+function setVal(w, name, v){
+  state.values[w.id][name] = String(v);
+  saveState();
+  refresh();
+}
+
+function buildForm(){
+  var w = byId(state.widget);
+  var host = $('#fields');
+  host.innerHTML = '';
+  $('#formTitle').textContent = w.name + ' 설정';
+  $('#formCount').textContent = '파라미터 ' + w.params.length + '개';
+
+  var vals = state.values[w.id];
+
+  w.params.forEach(function(p){
+    var field = el('div', 'field');
+    field.dataset.p = p.name;
+
+    var head = el('div', 'field-head');
+    var lab = el('label', null, p.ko);
+    var inputId = 'f-' + w.id + '-' + p.name;
+    lab.htmlFor = inputId;
+    head.appendChild(lab);
+    head.appendChild(el('span', 'pname', p.name));
+    var mark = el('span', 'mark');
+    mark.title = '기본값과 달라서 URL에 포함됩니다';
+    head.appendChild(mark);
+    field.appendChild(head);
+
+    if(p.kind === 'select'){
+      var sel = el('select', 'inp');
+      sel.id = inputId;
+      (p.options || []).forEach(function(o){
+        var op = el('option', null, optionLabel(p, o));
+        op.value = o;
+        sel.appendChild(op);
+      });
+      sel.value = vals[p.name];
+      sel.addEventListener('change', function(){ setVal(w, p.name, sel.value); });
+      field.appendChild(sel);
+
+    }else if(p.kind === 'bool'){
+      var sw = el('label', 'switch');
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.id = inputId;
+      cb.checked = vals[p.name] === '1';
+      var track = el('span', 'track');
+      track.appendChild(el('span', 'knob'));
+      var txt = el('span', 'sw-txt', cb.checked ? '켜짐 (1)' : '꺼짐 (0)');
+      cb.addEventListener('change', function(){
+        txt.textContent = cb.checked ? '켜짐 (1)' : '꺼짐 (0)';
+        setVal(w, p.name, cb.checked ? '1' : '0');
+      });
+      sw.appendChild(cb);
+      sw.appendChild(track);
+      sw.appendChild(txt);
+      lab.htmlFor = inputId;
+      field.appendChild(sw);
+
+    }else if(p.kind === 'color'){
+      var row = el('div', 'color-row');
+      var sq = document.createElement('input');
+      sq.type = 'color';
+      sq.className = 'swatch';
+      sq.setAttribute('aria-label', p.ko + ' 색 선택');
+      var tx = document.createElement('input');
+      tx.type = 'text';
+      tx.className = 'inp';
+      tx.id = inputId;
+      tx.spellcheck = false;
+      tx.autocomplete = 'off';
+      tx.maxLength = 7;
+      tx.placeholder = '비우면 테마 기본색';
+      tx.value = vals[p.name] || '';
+      sq.value = hex6(vals[p.name]) || themeAccentOf(w);
+
+      sq.addEventListener('input', function(){
+        tx.value = sq.value.replace('#', '');
+        setVal(w, p.name, tx.value);
+      });
+      tx.addEventListener('input', function(){
+        var h = hex6(tx.value);
+        if(h) sq.value = h;
+        setVal(w, p.name, tx.value.trim());
+      });
+
+      var clr = el('button', 'btn sm ghost', '기본');
+      clr.type = 'button';
+      clr.title = '테마 기본색으로 되돌리기';
+      clr.addEventListener('click', function(){
+        tx.value = '';
+        sq.value = themeAccentOf(w);
+        setVal(w, p.name, '');
+      });
+
+      row.appendChild(sq);
+      row.appendChild(tx);
+      row.appendChild(clr);
+      field.appendChild(row);
+      field._swatch = sq;
+      field._hex = tx;
+
+    }else if(p.kind === 'number'){
+      var num = document.createElement('input');
+      num.type = 'number';
+      num.className = 'inp';
+      num.id = inputId;
+      if(p.min !== undefined) num.min = p.min;
+      if(p.max !== undefined) num.max = p.max;
+      num.step = (p.min !== undefined && String(p.min).indexOf('.') >= 0) ? 'any' : '1';
+      num.value = vals[p.name];
+      num.addEventListener('input', function(){ setVal(w, p.name, num.value); });
+      num.addEventListener('blur', function(){
+        var n = clampNum(num.value, p.min, p.max);
+        if(n === null){ num.value = String(p.def); }
+        else { num.value = String(n); }
+        setVal(w, p.name, num.value);
+      });
+      field.appendChild(num);
+
+    }else{ /* text */
+      var t = document.createElement('input');
+      t.type = 'text';
+      t.className = 'inp';
+      t.id = inputId;
+      t.autocomplete = 'off';
+      t.value = vals[p.name];
+      t.addEventListener('input', function(){ setVal(w, p.name, t.value); });
+      field.appendChild(t);
+    }
+
+    field.appendChild(el('p', 'help', p.desc));
+    host.appendChild(field);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   9. 화면 갱신 (URL · 미리보기 · 표시등)
+   ══════════════════════════════════════════════════════════════ */
+
+var previewTimer = null;
+var lastPreview = '';
+
+function refresh(){
+  var w = byId(state.widget);
+  var used = {};
+  activeParams(w).forEach(function(kv){ used[kv.name] = true; });
+
+  /* 기본값과 다른 항목에 점 표시 */
+  var fields = $('#fields').children;
+  for(var i = 0; i < fields.length; i++){
+    var f = fields[i];
+    if(used[f.dataset.p]) f.classList.add('on');
+    else f.classList.remove('on');
+  }
+
+  /* 테마를 바꾸면 비어 있는 색 견본도 따라 바뀐다 */
+  for(var j = 0; j < fields.length; j++){
+    var g = fields[j];
+    if(g._swatch && g._hex && !normHex(g._hex.value)) g._swatch.value = themeAccentOf(w);
+  }
+
+  /* 주소 표시 — 물음표 뒤를 강조 */
+  var box = $('#urlBox');
+  var url = absUrl(w);
+  var q = url.indexOf('?');
+  box.textContent = '';
+  if(q < 0){
+    box.appendChild(document.createTextNode(url));
+  }else{
+    box.appendChild(document.createTextNode(url.slice(0, q)));
+    var b = el('b', null, url.slice(q));
+    box.appendChild(b);
+  }
+
+  /* 다운로드 링크 */
+  var dl = $('#dlBtn');
+  dl.href = widgetPath(w);
+  dl.setAttribute('download', w.file);
+
+  /* 미리보기 — 타이핑 중에는 잠깐 기다렸다가 새로고침 */
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(function(){
+    var src = relUrl(w);
+    if(src === lastPreview) return;
+    lastPreview = src;
+    $('#preview').src = src;
+  }, 260);
+}
+
+function selectWidget(id){
+  if(!byId(id)) return;
+  state.widget = id;
+  saveState();
+  paintTabs();
+  buildForm();
+  lastPreview = '';
+  refresh();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   10. 배경 토글 · 버튼 · 토스트
+   ══════════════════════════════════════════════════════════════ */
+
+function paintBg(){
+  var stage = $('#stage');
+  stage.className = 'stage bg-' + state.bg;
+  var btns = document.querySelectorAll('.seg [data-bg]');
+  for(var i = 0; i < btns.length; i++){
+    btns[i].setAttribute('aria-pressed', btns[i].dataset.bg === state.bg ? 'true' : 'false');
+  }
+}
+
+var toastTimer = null;
+function toast(msg, isErr){
+  var t = $('#toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!isErr);
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1900);
+}
+
+function legacyCopy(text){
+  try{
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '-1000px';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    var ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  }catch(e){ return false; }
+}
+
+function copyText(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){
+      toast('복사됨');
+    })['catch'](function(){
+      if(legacyCopy(text)) toast('복사됨');
+      else toast('복사에 실패했어요. 주소를 직접 선택해 주세요', true);
+    });
+    return;
+  }
+  if(legacyCopy(text)) toast('복사됨');
+  else toast('복사에 실패했어요. 주소를 직접 선택해 주세요', true);
+}
+
+function wireActions(){
+  $('#copyBtn').addEventListener('click', function(){
+    copyText(absUrl(byId(state.widget)));
+  });
+
+  $('#resetBtn').addEventListener('click', function(){
+    var w = byId(state.widget);
+    state.values[w.id] = defaultsOf(w);
+    saveState();
+    buildForm();
+    lastPreview = '';
+    refresh();
+    toast(w.name + ' 설정을 기본값으로 되돌렸어요');
+  });
+
+  var bgBtns = document.querySelectorAll('.seg [data-bg]');
+  for(var i = 0; i < bgBtns.length; i++){
+    bgBtns[i].addEventListener('click', function(){
+      state.bg = this.dataset.bg;
+      saveState();
+      paintBg();
+    });
+  }
+
+  var obsTabs = document.querySelectorAll('#obsTabs [data-obs]');
+  for(var k = 0; k < obsTabs.length; k++){
+    obsTabs[k].addEventListener('click', function(){
+      var which = this.dataset.obs;
+      for(var m = 0; m < obsTabs.length; m++){
+        obsTabs[m].setAttribute('aria-selected', obsTabs[m].dataset.obs === which ? 'true' : 'false');
+      }
+      $('#obsUrl').hidden = (which !== 'url');
+      $('#obsFile').hidden = (which !== 'file');
+    });
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   11. 등장 애니메이션
+   ══════════════════════════════════════════════════════════════ */
+
+function wireReveal(){
+  var items = document.querySelectorAll('.rise');
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduce || !window.IntersectionObserver){
+    for(var i = 0; i < items.length; i++) items[i].classList.add('in');
+    return;
+  }
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(!e.isIntersecting) return;
+      e.target.classList.add('in');
+      io.unobserve(e.target);
+    });
+  }, { rootMargin: '0px 0px -8% 0px', threshold: .05 });
+  for(var j = 0; j < items.length; j++) io.observe(items[j]);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   12. 시작
+   ══════════════════════════════════════════════════════════════ */
+
+loadState();
+buildCards();
+buildTabs();
+registerFit($('#stage'));
+paintBg();
+wireActions();
+selectWidget(state.widget);
+$('#preview').src = relUrl(byId(state.widget));
+lastPreview = relUrl(byId(state.widget));
+wireReveal();
+
+})();
+</script>
+</body>
+</html>

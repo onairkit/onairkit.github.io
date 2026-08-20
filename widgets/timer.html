@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>온에어킷 · 타이머</title>
+<!--
+  ══════════════════════════════════════════════════════════════════════
+  온에어킷(onairkit) · 타이머 / 카운트다운 위젯   timer.html
+  "방송 시작까지 N분", "휴식 10분" 같은 대기 화면용 타이머입니다.
+  ══════════════════════════════════════════════════════════════════════
+
+  ■ OBS에서 쓰는 법
+    1) OBS 소스 목록에서 [+] → "브라우저" 선택
+    2) "로컬 파일" 체크 → 이 파일(timer.html) 선택
+    3) 폭 1920 / 높이 1080 입력 → 확인
+    4) 화면에서 크기·위치를 자유롭게 조절
+
+  ■ 파라미터로 바꾸는 법 (둘 중 편한 것)
+    방법 A) 이 파일을 메모장으로 열어 아래 <script>의 CONFIG 값만 수정
+    방법 B) OBS 브라우저 소스 속성에서 "로컬 파일" 체크를 해제하고
+            URL 칸에 아래 형식으로 입력
+              file:///C:/경로/timer.html?파라미터=값&파라미터=값
+            예)
+              file:///C:/onairkit/widgets/timer.html?minutes=15&label=쉬는 시간
+
+  ■ 파라미터 표 ─────────────────────────────────────────────────────────
+    이름     설명                                        기본값         허용범위
+    ----------------------------------------------------------------------------
+    mode     타이머 종류                                 after          until | after | up | clock
+             until = 목표 시각까지 남은 시간
+             after = 지금부터 N분 남은 시간
+             up    = 경과 시간(카운트업)
+             clock = 현재 시각만 크게 표시
+    until    mode=until 일 때 목표 시각                  20:00          "20:00" / "20:00:00"
+             "20:00" 처럼 시:분만 쓰면 오늘 그 시각,                    / "2026-08-18T20:00"
+             이미 지난 시각이면 자동으로 "다음 날" 같은 시각             / "2026-08-18 20:00:00"
+             형식이 이상하면 안전하게 after 모드로 동작
+    minutes  mode=after 일 때 분                          10             0.1 ~ 1440 (소수 가능)
+    label    타이머 위에 뜨는 문구. 빈 값이면 숨김        방송 시작까지  아무 문자열 / "" (숨김)
+             ※ mode=up / clock 에서 label을 안 주면
+               각각 "경과 시간" / "현재 시각"으로 자동 대체
+    done     종료 시 label 자리에 표시할 문구             잠시 후 시작합니다  아무 문자열 / "" (숨김)
+    onend    종료 후 동작                                 freeze         freeze | hide | up
+             freeze = 00:00 그대로 유지
+             hide   = 위젯이 서서히 사라짐
+             up     = 종료 시각부터 경과 시간(+00:12)으로 전환
+    format   시간 표기 방식                               auto           auto | ms | hms | m
+             auto = 1시간 넘으면 h:mm:ss, 아니면 mm:ss
+             ms   = 항상 mm:ss (분은 60을 넘어도 그대로, 예 90:00)
+             hms  = 항상 h:mm:ss
+             m    = 분만 표시 (예: 10분)
+             ※ mode=clock 에서는 ms/hms 면 HH:MM:SS, 그 외에는 HH:MM
+    bar      남은 시간 진행 바 표시                       1              1 | 0
+             ※ mode=up / clock 에는 "남은 시간"이 없으므로
+               bar=1 이어도 진행 바가 나오지 않습니다
+    size     기준 글자 크기(px) — 숫자 크기                72             16 ~ 120
+    accent   포인트 색 (hex, # 생략 가능)                 theme 기본값    3자리/6자리 hex (예: ffd166)
+    dark     1=어두운 바 / 0=밝은 바                      theme 기본값    1 | 0
+    theme    색·모서리 프리셋                             default        default | news | pastel | minimal
+    pos      위젯 위치                                    c              bl | br | tl | tr | tc | bc | c
+             bl=좌하 br=우하 tl=좌상 tr=우상 tc=상단중앙 bc=하단중앙 c=화면중앙
+    margin   화면 가장자리 여백(px)                       48             0 ~ 400
+    credit   1=크레딧 표시 / 0=숨김 / 그 외 문자열이면    1              1 | 0 | 아무 문자열
+             그 문자열로 크레딧 문구 교체
+    reset    1이면 저장된 상태를 무시하고 처음부터 시작   (없음)         1
+    ----------------------------------------------------------------------------
+    ※ 값이 비었거나 범위를 벗어나거나 이상한 문자열이면 조용히 기본값으로 동작합니다.
+
+  ■ 실제로 동작하는 예시 URL
+    1) 5분 쉬는 시간 (기본 위치=화면 중앙)
+       file:///C:/onairkit/widgets/timer.html?minutes=5&label=쉬는 시간&done=곧 돌아옵니다
+    2) 밤 9시 방송 시작까지 (뉴스 테마, 상단 중앙)
+       file:///C:/onairkit/widgets/timer.html?mode=until&until=21:00&theme=news&pos=tc&size=64
+    3) 우상단 시계 (미니멀 테마, 초까지 표시)
+       file:///C:/onairkit/widgets/timer.html?mode=clock&format=hms&theme=minimal&pos=tr&size=44&margin=40
+    4) 방송 경과 시간 (좌하단, 진행 바 없음)
+       file:///C:/onairkit/widgets/timer.html?mode=up&label=방송 시간&accent=ffd166&bar=0&pos=bl&size=52
+    5) 25분 뽀모도로 — 끝나면 초과 시간으로 전환
+       file:///C:/onairkit/widgets/timer.html?minutes=25&label=집중 시간&onend=up&theme=pastel&format=ms
+    6) 저장된 시간 무시하고 10분 새로 시작
+       file:///C:/onairkit/widgets/timer.html?minutes=10&reset=1
+
+  ■ OBS에서 조작하는 법 (매우 중요)
+    OBS는 방송 송출 화면에 마우스가 존재하지 않습니다.
+    마우스를 쓰려면 [소스 우클릭 → "상호작용"] 창을 열어야 합니다.
+    그래서 이 위젯의 조작 버튼은 "마우스를 올렸을 때(hover)만" 나타나도록 만들었습니다.
+      - 평소 : opacity:0 / pointer-events:none  → 방송 화면에는 절대 안 보임
+      - hover: opacity:1 / pointer-events:auto  → 상호작용 창에서 마우스를 올릴 때만 나타남
+    즉 시청자에게는 깔끔한 타이머만 보이고, 스트리머만 버튼을 쓸 수 있습니다.
+
+    · 버튼      [-1분] [+1분] [일시정지/재개] [리셋]
+    · 키보드    (상호작용 창을 클릭해 포커스를 준 뒤)
+                ArrowUp   = +1분
+                ArrowDown = -1분
+                Space     = 일시정지 / 재개
+                R         = 리셋
+    · 남은 시간·일시정지 상태는 브라우저에 저장(localStorage, 키 접두사 "onairkit:")되어
+      새로고침하거나 OBS를 껐다 켜도 이어집니다. 처음부터 다시 하려면 URL에 &reset=1 을 붙이세요.
+    · onend=hide 로 위젯이 사라진 뒤에도, 상호작용 창에서 그 자리에 마우스를 올리면
+      흐릿하게 다시 나타나 [리셋] 버튼을 누를 수 있습니다.
+
+  ■ 만든 이 / 라이선스
+    온에어킷 — 외부 이미지·폰트 파일 없이 이 HTML 하나로 동작합니다.
+    (글꼴 Pretendard CSS 한 개만 인터넷에서 불러오며, 인터넷이 끊겨도 기본 글꼴로 동작합니다)
+  ══════════════════════════════════════════════════════════════════════
+-->
+<!--
+  Pretendard / SIL Open Font License 1.1
+  (c) 2021 Kil Hyung-jin, with Reserved Font Name 'Pretendard'
+  https://github.com/orioncactus/pretendard/blob/main/LICENSE
+  온에어킷은 Pretendard를 수정 없이 원본 그대로 CDN으로 불러옵니다.
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+  body{
+    font-family:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    /* 아래 값들은 JS가 파라미터를 읽어 덮어씁니다 */
+    --accent:#00ffa3;            /* 포인트 색 */
+    --warn:#ff3b30;              /* 시간이 얼마 안 남았을 때 바 색 */
+    --accent-soft:rgba(0,255,163,.15);
+    --accent-glow:rgba(0,255,163,.45);
+    --chipink:#0e1116;           /* 액센트 위에 얹는 글자 색 */
+    --fs:72px;                   /* 숫자 크기 */
+    --fs-label:20px;             /* 라벨 크기 */
+    --m:48px;                    /* 화면 여백 */
+    --maxw:1824px;               /* 위젯 최대 폭 */
+
+    /* 테마 공통(다크 기본) */
+    --radius:14px;
+    --shadow:drop-shadow(0 14px 34px rgba(0,0,0,.45));
+    --bar-d:rgba(18,19,24,.92);
+    --bar-l:rgba(255,255,255,.94);
+    --bar:var(--bar-d);
+    --ink:#f4f6f8;
+    --track:rgba(255,255,255,.15);
+    --edge:rgba(255,255,255,.10);
+    --tshadow:0 2px 12px rgba(0,0,0,.5);
+  }
+  /* ── theme 프리셋: 색/모서리/그림자만 다름. 레이아웃은 동일 ── */
+  body.t-news{
+    --radius:4px;
+    --shadow:drop-shadow(0 12px 30px rgba(0,0,0,.52));
+    --bar-d:rgba(11,16,32,.95);
+    --bar-l:rgba(255,255,255,.96);
+  }
+  body.t-pastel{
+    --radius:22px;
+    --shadow:drop-shadow(0 20px 46px rgba(120,80,95,.26));
+    --bar-d:rgba(38,28,34,.92);
+    --bar-l:rgba(255,250,246,.96);
+  }
+  body.t-minimal{
+    --radius:8px;
+    --shadow:drop-shadow(0 3px 10px rgba(0,0,0,.16));
+    --bar-d:rgba(19,19,19,.92);
+    --bar-l:rgba(255,255,255,.94);
+    --edge:rgba(0,0,0,.06);
+  }
+  body.light{
+    --bar:var(--bar-l);
+    --ink:#15171c;
+    --track:rgba(0,0,0,.12);
+    --edge:rgba(0,0,0,.07);
+    --tshadow:none;
+  }
+
+  /* ── 위치 잡는 바깥 껍데기 ── */
+  #stage{position:fixed;max-width:var(--maxw)}
+  #stage.pos-bl{left:var(--m);bottom:var(--m)}
+  #stage.pos-br{right:var(--m);bottom:var(--m)}
+  #stage.pos-tl{left:var(--m);top:var(--m)}
+  #stage.pos-tr{right:var(--m);top:var(--m)}
+  #stage.pos-tc{top:var(--m);left:50%;transform:translateX(-50%)}
+  #stage.pos-bc{bottom:var(--m);left:50%;transform:translateX(-50%)}
+  #stage.pos-c {top:50%;left:50%;transform:translate(-50%,-50%)}
+
+  /* ── 위젯 본체 ── */
+  #wrap{position:relative}
+  #wrap{
+    max-width:var(--maxw);
+    filter:var(--shadow);
+    animation:enter .55s cubic-bezier(.2,.8,.2,1) backwards;
+    transition:opacity .55s cubic-bezier(.2,.8,.2,1);
+  }
+  @keyframes enter{from{transform:translateY(16px) scale(.985);opacity:0}}
+  #wrap.gone{opacity:0}
+  #wrap.gone:hover{opacity:.55}   /* 상호작용 창에서만 다시 꺼내볼 수 있게 */
+
+  #card{
+    display:flex;flex-direction:column;align-items:center;
+    gap:calc(var(--fs)*.10);
+    background:var(--bar);color:var(--ink);
+    border:1px solid var(--edge);
+    border-radius:var(--radius);
+    padding:calc(var(--fs)*.34) calc(var(--fs)*.62) calc(var(--fs)*.36);
+    max-width:100%;
+  }
+  /* news 테마: 왼쪽 액센트 세로 바 */
+  body.t-news #card{border-left:6px solid var(--accent);border-radius:0 var(--radius) var(--radius) 0}
+
+  #label{
+    max-width:100%;
+    font-size:var(--fs-label);font-weight:800;letter-spacing:.03em;
+    color:var(--accent);background:var(--accent-soft);
+    padding:.40em .78em;border-radius:calc(var(--radius) * .7);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    transition:background-color .35s cubic-bezier(.2,.8,.2,1),color .35s cubic-bezier(.2,.8,.2,1);
+  }
+  #label.done{background:var(--accent);color:var(--chipink)}
+  #label.hide{display:none}
+
+  #timerow{
+    display:flex;align-items:baseline;justify-content:center;gap:.10em;
+    font-size:var(--fs);font-weight:800;line-height:1.04;letter-spacing:-.015em;
+    font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;
+    text-shadow:var(--tshadow);
+  }
+  #time{display:inline-block;transform-origin:50% 55%}
+  #time.urgent{
+    color:var(--accent);
+    text-shadow:0 0 26px var(--accent-glow), var(--tshadow);
+    animation:pulse 1s cubic-bezier(.2,.8,.2,1) infinite;
+  }
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+  #unit{font-size:.38em;font-weight:700;opacity:.72;display:none}
+  body.showunit #unit{display:inline}
+  body.paused #time{opacity:.55}
+
+  #track{
+    width:100%;height:calc(var(--fs)*.075);min-height:4px;
+    border-radius:99px;background:var(--track);overflow:hidden;
+    margin-top:calc(var(--fs)*.06);
+  }
+  #fill{
+    height:100%;width:100%;border-radius:99px;
+    background:var(--accent);
+    transform:scaleX(1);transform-origin:left center;
+  }
+  body.nobar #track{display:none}
+
+  /* ── 조작 버튼: hover 일 때만 보임 (OBS 상호작용 창 전용) ── */
+  #ops{
+    position:absolute;left:50%;transform:translateX(-50%);
+    /* 카드와 버튼 사이의 12px 는 "빈 칸"이 아니라 #ops 자신의 투명 padding 입니다.
+       calc(100% + 12px) 로 진짜 틈을 두면, 카드에서 버튼으로 마우스를 올리는 도중
+       그 틈에서 #wrap:hover 가 끊겨(pointer-events:none 복귀) 버튼을 영영 누를 수 없습니다.
+       padding 으로 이어 붙여야 마우스가 카드 → 버튼으로 끊김 없이 넘어갑니다. */
+    bottom:100%;padding-bottom:12px;
+    display:flex;gap:6px;white-space:nowrap;
+    opacity:0;pointer-events:none;
+    transition:opacity .18s cubic-bezier(.2,.8,.2,1);
+  }
+  #wrap:hover #ops{opacity:1;pointer-events:auto}
+  body.postop #ops{bottom:auto;top:100%;padding-bottom:0;padding-top:26px}
+  body.noops #ops{display:none}
+  #ops button{
+    font-family:inherit;font-size:13px;font-weight:700;line-height:1;
+    color:#eef1f4;background:rgba(20,22,28,.88);
+    border:1px solid rgba(255,255,255,.18);border-radius:8px;
+    padding:7px 11px;cursor:pointer;
+    transition:background-color .15s ease,color .15s ease,border-color .15s ease;
+  }
+  #ops button:hover{background:var(--accent);color:var(--chipink);border-color:transparent}
+  body.light #ops button{color:#15171c;background:rgba(255,255,255,.94);border-color:rgba(0,0,0,.16)}
+
+  /* ── 크레딧 (온에어킷 공통 규격) ── */
+  #credit{position:absolute;right:2px;bottom:-17px;font-size:11px;font-weight:600;
+    letter-spacing:.06em;color:rgba(255,255,255,.34);
+    text-shadow:0 1px 3px rgba(0,0,0,.55);pointer-events:none;user-select:none;white-space:nowrap}
+  body.light #credit{color:rgba(0,0,0,.30);text-shadow:none}
+  body.nocredit #credit{display:none}
+  /* pos가 상단이면 크레딧이 화면 밖으로 잘리므로 아래로 뒤집음 */
+  body.postop #credit{bottom:auto;top:calc(100% + 4px)}
+
+  @media (prefers-reduced-motion: reduce){
+    #wrap{animation:none;transition:none}
+    #time.urgent{animation:none}
+    #label{transition:none}
+    #ops{transition:none}
+  }
+</style>
+</head>
+<body>
+  <div id="stage">
+    <div id="wrap">
+      <div id="card">
+        <div id="label"></div>
+        <div id="timerow"><span id="time">00:00</span><span id="unit">분</span></div>
+        <div id="track"><div id="fill"></div></div>
+      </div>
+      <div id="ops">
+        <button type="button" id="bMinus">-1분</button>
+        <button type="button" id="bPlus">+1분</button>
+        <button type="button" id="bPause">일시정지</button>
+        <button type="button" id="bReset">리셋</button>
+      </div>
+      <div id="credit">온에어킷</div>
+    </div>
+  </div>
+
+<script>
+/* ══ 기본값: 메모장으로 열어 이 값만 고쳐도 됩니다 ═══════════════════ */
+const CONFIG = {
+  mode:    "after",              // until | after | up | clock
+  until:   "20:00",              // mode=until 일 때 목표 시각
+  minutes: 10,                   // mode=after 일 때 분 (0.1 ~ 1440)
+  label:   "방송 시작까지",       // 타이머 위 문구 ("" 이면 숨김)
+  done:    "잠시 후 시작합니다",  // 종료 시 문구 ("" 이면 숨김)
+  onend:   "freeze",             // freeze | hide | up
+  format:  "auto",               // auto | ms | hms | m
+  bar:     1,                    // 1=진행 바 표시 / 0=숨김
+  size:    72,                   // 숫자 크기(px, 16~120)
+  accent:  null,                 // null 이면 theme 기본 액센트 사용 (예: "#00ffa3")
+  dark:    "",                   // 빈 값이면 theme 기본값 사용 (1=다크 / 0=라이트)
+  theme:   "default",            // default | news | pastel | minimal
+  pos:     "c",                  // bl | br | tl | tr | tc | bc | c
+  margin:  48,                   // 화면 여백(px, 0~400)
+  credit:  1                     // 1 | 0 | "직접 쓴 문구"
+};
+/* ═══════════════════════════════════════════════════════════════ */
+
+/* ── theme 프리셋이 정하는 기본값(액센트/다크). 사용자가 지정하면 그쪽이 우선 ── */
+/* accentDark = 다크 모드일 때 대신 쓰는 액센트.
+   minimal의 #1a1a1a 는 다크 바(#131313) 위에서 사실상 안 보이므로 반드시 필요하다.
+   (counter / queue / roulette 도 같은 이름·같은 값으로 처리한다) */
+const THEMES = {
+  "default": { accent:"#00ffa3", accentDark:"", dark:1 },
+  "news":    { accent:"#ff2d55", accentDark:"", dark:1 },
+  "pastel":  { accent:"#ff8fb1", accentDark:"", dark:0 },
+  "minimal": { accent:"#1a1a1a", accentDark:"#ededed", dark:0 }
+};
+const LS_KEY = "onairkit:timer";      // 상태 저장 키 접두사 (공통 접두사 onairkit:)
+
+/* ── 작은 도우미들 ─────────────────────────────────────────────── */
+const $ = function (id) { return document.getElementById(id); };
+const q = new URLSearchParams(location.search);
+const p2 = function (n) { return String(n).padStart(2, "0"); };
+const clamp = function (n, mi, ma) { return Math.min(ma, Math.max(mi, n)); };
+
+/* URL 값 읽기: 파라미터가 없거나 공백뿐이면 null */
+function raw(k) {
+  if (!q.has(k)) return null;
+  const v = String(q.get(k)).trim();
+  return v === "" ? null : v;
+}
+/* URL → CONFIG 순으로 문자열 하나 고르기 */
+function pick(k, def) {
+  const v = raw(k);
+  return v === null ? String(def === null || def === undefined ? "" : def) : v;
+}
+/* 화이트리스트 검사 */
+function oneOf(v, list, def) {
+  return list.indexOf(String(v)) >= 0 ? String(v) : def;
+}
+/* "1"/"0" 전용 화이트리스트. 빈 값·"abc"·"2" 같은 건 전부 def 로 폴백 */
+function pick01(v, def) {
+  const s = (v === null || v === undefined) ? "" : String(v).trim();
+  return (s === "1" || s === "0") ? s : def;
+}
+/* 숫자 검사 + 범위 제한 */
+function num(v, def, mi, ma) {
+  const n = parseFloat(v);
+  return isFinite(n) ? clamp(n, mi, ma) : def;
+}
+/* 색 검사: 3자리/6자리 hex 만 통과, 실패하면 기본값 */
+function hexColor(v, def) {
+  const s = String(v === null || v === undefined ? "" : v).trim().replace(/^#/, "");
+  return /^([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(s) ? "#" + s.toLowerCase() : def;
+}
+function hexToRgb(h) {
+  let s = String(h).replace(/^#/, "");
+  if (s.length === 3) s = s[0] + s[0] + s[1] + s[1] + s[2] + s[2];
+  const n = parseInt(s, 16);
+  if (!isFinite(n)) return [0, 255, 163];
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+/* 액센트가 밝으면 그 위 글자는 검정, 어두우면 흰색 */
+function inkOn(rgb) {
+  const lum = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+  return lum > 0.62 ? "#0e1116" : "#ffffff";
+}
+/* 경고색: 액센트가 이미 빨강 계열이면 구분되도록 앰버로 */
+function warnFor(rgb) {
+  const mx = Math.max(rgb[0], rgb[1], rgb[2]), mn = Math.min(rgb[0], rgb[1], rgb[2]);
+  const d = (mx - mn) / 255;
+  if (d < 0.10) return "#ff3b30";                       // 무채색 액센트 → 빨강
+  let h;
+  const r = rgb[0] / 255, g = rgb[1] / 255, b = rgb[2] / 255, dd = (mx - mn) / 255;
+  if (mx / 255 === r) h = ((g - b) / dd) % 6;
+  else if (mx / 255 === g) h = (b - r) / dd + 2;
+  else h = (r - g) / dd + 4;
+  h = ((h * 60) + 360) % 360;
+  return (h >= 330 || h <= 28) ? "#ffb703" : "#ff3b30"; // 빨강~분홍 계열이면 앰버
+}
+function mixRgb(a, b, t) {
+  return [
+    Math.round(a[0] + (b[0] - a[0]) * t),
+    Math.round(a[1] + (b[1] - a[1]) * t),
+    Math.round(a[2] + (b[2] - a[2]) * t)
+  ];
+}
+
+/* ── 설정 확정 (URL 파라미터가 CONFIG를 덮어씀) ─────────────────── */
+const themeName = oneOf(pick("theme", CONFIG.theme), ["default", "news", "pastel", "minimal"], "default");
+const TH = THEMES[themeName];
+
+/* dark 는 "1"/"0" 만 인정. 이상한 값이면 CONFIG → theme 기본값 순으로 폴백
+   (예: theme=pastel&dark=abc 는 pastel 의 기본값인 라이트를 그대로 유지)
+   accent 의 기본값이 dark 에 따라 달라지므로 dark 를 먼저 정한다. */
+const darkSrc = pick01(raw("dark"), pick01(CONFIG.dark, String(TH.dark)));
+const isDark = String(darkSrc) !== "0";
+
+const accentSrc = raw("accent") !== null ? raw("accent") : CONFIG.accent;
+const accent = hexColor(accentSrc, (isDark && TH.accentDark) ? TH.accentDark : TH.accent);
+
+const cfg = {
+  mode:    oneOf(pick("mode", CONFIG.mode), ["until", "after", "up", "clock"], "after"),
+  untilRaw: pick("until", CONFIG.until),
+  minutes: num(pick("minutes", CONFIG.minutes), 10, 0.1, 1440),
+  label:   q.has("label") ? String(q.get("label")) : String(CONFIG.label === null ? "" : CONFIG.label),
+  done:    q.has("done") ? String(q.get("done")) : String(CONFIG.done === null ? "" : CONFIG.done),
+  onend:   oneOf(pick("onend", CONFIG.onend), ["freeze", "hide", "up"], "freeze"),
+  format:  oneOf(pick("format", CONFIG.format), ["auto", "ms", "hms", "m"], "auto"),
+  bar:     pick01(raw("bar"), pick01(CONFIG.bar, "1")) !== "0",
+  size:    Math.round(num(pick("size", CONFIG.size), 72, 16, 120)),
+  accent:  accent,
+  dark:    isDark,
+  theme:   themeName,
+  pos:     oneOf(pick("pos", CONFIG.pos), ["bl", "br", "tl", "tr", "tc", "bc", "c"], "c"),
+  margin:  Math.round(num(pick("margin", CONFIG.margin), 48, 0, 400)),
+  reset:   pick("reset", "0") === "1"
+};
+
+/* 목표 시각 문자열 해석. 못 읽으면 null */
+function untilTarget(now) {
+  const s = String(cfg.untilRaw).trim();
+  let m = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(s);
+  if (m) {
+    const h = +m[1], mi = +m[2], se = m[3] ? +m[3] : 0;
+    if (h > 23 || mi > 59 || se > 59) return null;
+    const d = new Date(now);
+    d.setHours(h, mi, se, 0);
+    if (d.getTime() <= now) d.setDate(d.getDate() + 1);   // 이미 지난 시각이면 다음 날로 롤오버
+    return d.getTime();
+  }
+  m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/.exec(s);
+  if (m) {
+    const y = +m[1], mo = +m[2], da = +m[3];
+    const h = m[4] ? +m[4] : 0, mi = m[5] ? +m[5] : 0, se = m[6] ? +m[6] : 0;
+    if (mo < 1 || mo > 12 || da < 1 || da > 31 || h > 23 || mi > 59 || se > 59) return null;
+    const d = new Date(y, mo - 1, da, h, mi, se, 0);
+    const t = d.getTime();
+    return isFinite(t) ? t : null;
+  }
+  return null;
+}
+/* until 값이 이상하면 조용히 after 모드로 */
+if (cfg.mode === "until" && untilTarget(Date.now()) === null) cfg.mode = "after";
+
+/* mode에 맞는 기본 라벨 (label을 따로 주지 않았을 때만) */
+if (!q.has("label") && String(CONFIG.label) === "방송 시작까지") {
+  if (cfg.mode === "up") cfg.label = "경과 시간";
+  else if (cfg.mode === "clock") cfg.label = "현재 시각";
+}
+
+/* ── 화면에 색·크기 반영 ───────────────────────────────────────── */
+const A_RGB = hexToRgb(cfg.accent);
+const W_RGB = hexToRgb(warnFor(A_RGB));
+const bodyEl = document.body;
+/* CSS 변수 기본값이 body 규칙에 있으므로, 덮어쓸 때도 body 인라인 스타일에 써야 합니다 */
+const rs = document.body.style;
+
+rs.setProperty("--accent", cfg.accent);
+rs.setProperty("--warn", "rgb(" + W_RGB.join(",") + ")");
+rs.setProperty("--accent-soft", "rgba(" + A_RGB.join(",") + ",.16)");
+rs.setProperty("--accent-glow", "rgba(" + A_RGB.join(",") + ",.45)");
+rs.setProperty("--chipink", inkOn(A_RGB));
+rs.setProperty("--fs", cfg.size + "px");
+rs.setProperty("--fs-label", Math.round(clamp(cfg.size * 0.27, 11, 34)) + "px");
+rs.setProperty("--m", cfg.margin + "px");
+
+bodyEl.classList.add("t-" + cfg.theme);
+if (!cfg.dark) bodyEl.classList.add("light");
+if (!cfg.bar || cfg.mode === "up" || cfg.mode === "clock") bodyEl.classList.add("nobar");
+if (cfg.format === "m" && cfg.mode !== "clock") bodyEl.classList.add("showunit");
+if (cfg.mode === "clock") bodyEl.classList.add("noops");
+if (cfg.pos === "tl" || cfg.pos === "tr" || cfg.pos === "tc") bodyEl.classList.add("postop");
+$("stage").className = "pos-" + cfg.pos;
+
+/* 라벨: 사용자 입력은 textContent 로만 (innerHTML 금지 — XSS 방지) */
+const labelText = String(cfg.label).trim();
+const doneText = String(cfg.done).trim();
+
+/* 크레딧 (온에어킷 공통 규격 — 5개 위젯 동일) */
+const creditRaw = q.has("credit") ? q.get("credit") : String(CONFIG.credit);
+if (creditRaw === "0") document.body.classList.add("nocredit");
+else document.getElementById("credit").textContent =
+  (creditRaw === "1" || creditRaw === "") ? "온에어킷" : creditRaw;
+
+/* ── 상태 (localStorage 저장 · Date 기준) ──────────────────────── */
+/*  st = { sig, start, target, paused, pausedAt }
+    start  : 기준 시작 시각(ms)   target : 목표 시각(ms)
+    남은 시간은 매 프레임 target - 현재시각 으로 다시 계산합니다.
+    (경과 시간을 누적해서 빼는 방식은 탭이 백그라운드로 가면 어긋나므로 쓰지 않습니다) */
+let st = null;
+
+function sig() { return [cfg.mode, cfg.minutes, cfg.untilRaw].join("|"); }
+/* 저장 키에 설정값을 붙입니다. 한 장면에 타이머 소스를 2개 이상 넣어도
+   (예: 경과 시간 + 쉬는 시간 카운트다운) 서로의 저장값을 덮어쓰지 않습니다. */
+function lsKey() { return LS_KEY + ":" + sig(); }
+
+function freshState() {
+  const now = Date.now();
+  const s = { sig: sig(), start: now, target: now, paused: false, pausedAt: 0 };
+  if (cfg.mode === "until") {
+    const t = untilTarget(now);
+    s.target = (t === null) ? now + cfg.minutes * 60000 : t;
+  } else if (cfg.mode === "after") {
+    s.target = now + cfg.minutes * 60000;
+  }
+  return s;
+}
+function loadState() {
+  try {
+    const r = localStorage.getItem(lsKey());
+    if (!r) return null;
+    const s = JSON.parse(r);
+    if (!s || typeof s !== "object") return null;
+    if (s.sig !== sig()) return null;                       // 설정이 바뀌면 새로 시작
+    if (!isFinite(s.start) || !isFinite(s.target) || !isFinite(s.pausedAt)) return null;
+    s.paused = !!s.paused;
+    const now = Date.now();
+    if (s.paused) return s;                                  // 일시정지 중이면 오래돼도 유지
+    if (s.start > now + 60000) return null;                  // 시계가 크게 어긋난 경우
+    if (cfg.mode === "up") return (now - s.start) < 72 * 3600 * 1000 ? s : null;
+    return (now - s.target) < 12 * 3600 * 1000 ? s : null;   // 너무 오래 지난 타이머는 새로 시작
+  } catch (e) { return null; }
+}
+function save() {
+  try { localStorage.setItem(lsKey(), JSON.stringify(st)); } catch (e) { /* 저장 불가여도 동작에는 지장 없음 */ }
+}
+
+st = cfg.reset ? null : loadState();
+if (!st) { st = freshState(); save(); }
+
+/* ── 시간 표기 ─────────────────────────────────────────────────── */
+function fmt(ms, countingUp) {
+  const v = Math.max(0, ms);
+  const sec = countingUp ? Math.floor(v / 1000) : Math.ceil(v / 1000);
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  if (cfg.format === "m") return String(countingUp ? Math.floor(v / 60000) : Math.ceil(v / 60000));
+  if (cfg.format === "hms") return h + ":" + p2(m) + ":" + p2(s);
+  if (cfg.format === "ms") return p2(Math.floor(sec / 60)) + ":" + p2(s);
+  return (h >= 1) ? (h + ":" + p2(m) + ":" + p2(s)) : (p2(Math.floor(sec / 60)) + ":" + p2(s));
+}
+
+/* ── 그리기 (매 프레임, 바뀐 것만 DOM 수정) ────────────────────── */
+const elTime = $("time"), elLabel = $("label"), elFill = $("fill"), elWrap = $("wrap");
+let lastText = null, lastLabel = null, lastDone = null, lastUrgent = null, lastGone = null, lastFillCss = null, lastScale = -1;
+
+function render() {
+  const now = Date.now();
+  const eff = st.paused ? st.pausedAt : now;   // 일시정지 중에는 멈춘 시각 기준
+  let text, ratio = 0, urgent = false, ended = false, gone = false;
+
+  if (cfg.mode === "clock") {
+    const d = new Date(now);
+    const withSec = (cfg.format === "hms" || cfg.format === "ms");
+    text = p2(d.getHours()) + ":" + p2(d.getMinutes()) + (withSec ? ":" + p2(d.getSeconds()) : "");
+  } else if (cfg.mode === "up") {
+    text = fmt(eff - st.start, true);
+  } else {
+    const remain = st.target - eff;
+    const total = Math.max(1, st.target - st.start);
+    ended = remain <= 0;
+    if (!ended) {
+      text = fmt(remain, false);
+      ratio = clamp(remain / total, 0, 1);
+      urgent = remain <= 10000;               // 마지막 10초 강조
+    } else if (cfg.onend === "up") {
+      text = "+" + fmt(eff - st.target, true);
+    } else {
+      text = fmt(0, false);                    // freeze / hide → 00:00 유지
+      if (cfg.onend === "hide") gone = true;
+    }
+  }
+
+  if (text !== lastText) { elTime.textContent = text; lastText = text; }
+
+  const wantLabel = (ended && doneText) ? doneText : (ended && cfg.onend !== "freeze" ? "" : labelText);
+  const isDone = ended && !!doneText;
+  if (wantLabel !== lastLabel) {
+    elLabel.textContent = wantLabel;
+    elLabel.classList.toggle("hide", wantLabel === "");
+    lastLabel = wantLabel;
+  }
+  if (isDone !== lastDone) { elLabel.classList.toggle("done", isDone); lastDone = isDone; }
+  if (urgent !== lastUrgent) { elTime.classList.toggle("urgent", urgent); lastUrgent = urgent; }
+  if (gone !== lastGone) { elWrap.classList.toggle("gone", gone); lastGone = gone; }
+
+  if (cfg.bar && cfg.mode !== "up" && cfg.mode !== "clock") {
+    const sc = Math.round(ratio * 1000) / 1000;
+    if (sc !== lastScale) { elFill.style.transform = "scaleX(" + sc + ")"; lastScale = sc; }
+    const t = clamp((0.4 - ratio) / 0.4, 0, 1);            // 40% 남았을 때부터 경고색으로
+    const css = "rgb(" + mixRgb(A_RGB, W_RGB, t).join(",") + ")";
+    if (css !== lastFillCss) { elFill.style.background = css; lastFillCss = css; }
+  }
+  requestAnimationFrame(render);
+}
+
+/* ── 조작 ─────────────────────────────────────────────────────── */
+function addMinutes(mins) {
+  if (cfg.mode === "clock") return;
+  const base = st.paused ? st.pausedAt : Date.now();
+  const d = mins * 60000;
+  if (cfg.mode === "up") {
+    if (d > 0) st.start -= d;
+    else st.start = Math.min(base, st.start - d);           // 경과 시간이 음수가 되지 않게
+  } else {
+    if (d > 0) { if (st.target < base) st.target = base; st.target += d; }
+    else st.target = Math.max(base, st.target + d);         // 남은 시간이 음수가 되지 않게
+  }
+  save();
+}
+function togglePause() {
+  if (cfg.mode === "clock") return;
+  const now = Date.now();
+  if (st.paused) {
+    const delta = Math.max(0, now - st.pausedAt);
+    st.start += delta; st.target += delta;
+    st.paused = false; st.pausedAt = 0;
+  } else {
+    st.paused = true; st.pausedAt = now;
+  }
+  save(); syncPauseUi();
+}
+function doReset() {
+  st = freshState(); save();
+  lastText = lastLabel = lastDone = lastUrgent = lastGone = lastFillCss = null; lastScale = -1;
+  elWrap.classList.remove("gone");
+  syncPauseUi();
+}
+function syncPauseUi() {
+  $("bPause").textContent = st.paused ? "재개" : "일시정지";
+  bodyEl.classList.toggle("paused", !!st.paused && cfg.mode !== "clock");
+}
+
+$("bMinus").addEventListener("click", function () { addMinutes(-1); });
+$("bPlus").addEventListener("click", function () { addMinutes(1); });
+$("bPause").addEventListener("click", togglePause);
+$("bReset").addEventListener("click", doReset);
+
+window.addEventListener("keydown", function (e) {
+  if (cfg.mode === "clock") return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;   // Ctrl+R(새로고침) 등은 그대로 두기
+  const k = String(e.key || "");
+  if (e.code === "ArrowUp" || k === "ArrowUp") { e.preventDefault(); addMinutes(1); }
+  else if (e.code === "ArrowDown" || k === "ArrowDown") { e.preventDefault(); addMinutes(-1); }
+  else if (e.code === "Space" || k === " " || k === "Spacebar") { e.preventDefault(); togglePause(); }
+  else if (e.code === "KeyR" || k.toLowerCase() === "r") { e.preventDefault(); doReset(); }
+});
+
+/* ── 레이아웃 재계산 (창 크기 변경 / 폰트 로드 후) ─────────────── */
+function layout() {
+  const w = Math.max(120, window.innerWidth - cfg.margin * 2);
+  rs.setProperty("--maxw", w + "px");
+  $("card").style.minWidth = Math.min(Math.round(cfg.size * 4.4), w) + "px";
+}
+layout();
+window.addEventListener("resize", layout);
+if (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === "function") {
+  document.fonts.ready.then(layout).catch(function () {});
+}
+
+syncPauseUi();
+render();
+</script>
+</body>
+</html>

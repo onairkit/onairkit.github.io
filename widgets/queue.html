@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>온에어킷 · 시참 대기열</title>
+<!--
+  ─────────────────────────────────────────────────────────────────────────────
+  온에어킷 (onairkit) — 시참 대기열 위젯 (queue.html)
+  시청자 참여 순서를 화면에 띄우고, 방송 중에 직접 추가/완료하는 대기열 위젯.
+
+  ※ 채팅 자동 연동(치지직·SOOP 채팅 읽기)은 서버가 필요해서 이 프로젝트 원칙상 하지 않습니다. 수동 관리 전용입니다.
+  ─────────────────────────────────────────────────────────────────────────────
+
+  ■ OBS에서 쓰는 법
+    1) OBS 소스 목록에서 [+] → "브라우저" 선택
+    2) "로컬 파일" 체크 → 이 파일(queue.html) 선택
+    3) 폭 1920 / 높이 1080 입력 → 확인
+    4) 화면에서 크기·위치를 자유롭게 조절
+
+  ■ 파라미터로 바꾸는 법 (두 가지 중 편한 것)
+    방법 A) 이 파일을 메모장으로 열어 아래 <script> 맨 위 CONFIG 값만 수정
+    방법 B) OBS에서 "로컬 파일" 체크를 해제하고 URL 칸에 아래 형식으로 입력
+            file:///C:/경로/queue.html?파라미터=값&파라미터=값
+            (예: file:///C:/onairkit/widgets/queue.html?title=오늘의 시참&max=8)
+
+  ■ 파라미터 표
+    ┌──────────┬────────────────────────────────────────┬───────────────┬──────────────────────────────┐
+    │ 이름     │ 설명                                   │ 기본값        │ 허용범위                     │
+    ├──────────┼────────────────────────────────────────┼───────────────┼──────────────────────────────┤
+    │ title    │ 제목 문구. 빈 값이면 제목 줄 전체 숨김  │ 시참 대기열   │ 아무 문자열(60자까지) / 빈 값│
+    │ names    │ 초기 대기열. | (세로줄)로 구분          │ 데모 5명      │ 최대 200명, 닉네임 80자까지  │
+    │ max      │ 화면에 보여줄 최대 인원                 │ 5             │ 1~20 (초과분은 "외 N명")     │
+    │ numbered │ 순번 숫자 표시                          │ 1             │ 1 / 0                        │
+    │ current  │ 맨 위(현재 차례)를 액센트로 강조        │ 1             │ 1 / 0                        │
+    │ size     │ 기준 글자 크기(px)                      │ 30            │ 16~120                       │
+    │ accent   │ 포인트 색 (hex, # 생략 가능)            │ 테마 기본색   │ 3자리/6자리 hex (예 ff8fb1)  │
+    │ dark     │ 1=어두운 배경 / 0=밝은 배경             │ 테마 기본     │ 1 / 0                        │
+    │ theme    │ 색 프리셋                               │ default       │ default|news|pastel|minimal  │
+    │ pos      │ 위젯 위치                               │ tr            │ bl|br|tl|tr|tc|bc|c          │
+    │ margin   │ 화면 가장자리 여백(px)                  │ 48            │ 0~400                        │
+    │ credit   │ 크레딧 표시                             │ 1             │ 1 / 0 / 그 외 문자열로 교체  │
+    │ reset    │ 저장된 대기열을 버리고 names 로 복귀    │ (없음)        │ 1 (값 없이 ?reset 만 써도 됨)│
+    └──────────┴────────────────────────────────────────┴───────────────┴──────────────────────────────┘
+    · 값이 비었거나 이상한 값이면 자동으로 기본값으로 되돌아갑니다(절대 깨지지 않음).
+    · theme이 dark와 accent의 기본값을 정합니다. dark나 accent를 직접 쓰면 그 값이 우선입니다.
+      default : 바 #121318 92% + 액센트 #00ffa3, 라운드 14px
+      news    : 바 #0b1020 95% + 액센트 #ff2d55, 라운드 4px, 왼쪽 액센트 세로 바
+      pastel  : 바 #fffaf6 96% + 액센트 #ff8fb1, 라운드 22px, 넓고 부드러운 그림자 (기본 라이트)
+      minimal : 바 #ffffff 94% + 액센트 #1a1a1a, 라운드 8px, 그림자 최소 (기본 라이트)
+
+  ■ 예시 URL (그대로 복사해서 경로만 바꿔 쓰세요)
+    1) 기본 데모 그대로
+       file:///C:/onairkit/widgets/queue.html
+    2) 제목·인원 바꾸고 뉴스 속보 느낌으로, 좌하단 배치
+       file:///C:/onairkit/widgets/queue.html?title=오늘의 시참&names=구름빵|밤톨이|초코칩|감자전|물감&max=3&theme=news&pos=bl
+    3) 파스텔 테마 + 순번 숨김 + 글자 크게
+       file:///C:/onairkit/widgets/queue.html?theme=pastel&numbered=0&size=38&pos=tl
+    4) 미니멀 라이트 + 여백 좁게 + 크레딧 문구 교체
+       file:///C:/onairkit/widgets/queue.html?theme=minimal&max=10&margin=24&credit=닉네임TV
+    5) 저장된 대기열을 버리고 초기 명단으로 되돌리기
+       file:///C:/onairkit/widgets/queue.html?reset=1
+
+  ■ OBS에서 조작하는 법 (매우 중요)
+    · OBS는 소스 우클릭 → "상호작용"을 눌러 나오는 창에서만 마우스가 동작합니다.
+      방송으로 나가는 화면에는 마우스 커서가 없습니다.
+    · 그래서 이 위젯의 조작 버튼(입력창·추가·완료·삭제)은 평소에 opacity:0 + pointer-events:none 로 숨겨 두고,
+      위젯 위에 마우스를 올렸을 때(#wrap:hover)만 opacity:1 + pointer-events:auto 로 나타납니다.
+      → 방송 화면에는 조작 UI가 절대 보이지 않고, "상호작용" 창에서 마우스를 올릴 때만 보입니다.
+    · 조작 방법
+        - 위젯 위에 마우스를 올리면 상단에 입력창과 [추가] 버튼이 나타납니다. 닉네임을 적고 Enter 또는 [추가].
+        - 각 줄에 마우스를 올리면 오른쪽에 [완료] [삭제] 작은 버튼이 나타납니다.
+        - [완료]는 위로 사라지고, [삭제]는 옆으로 사라집니다. (둘 다 대기열에서 빠집니다)
+    · 키보드 단축키 ("상호작용" 창을 한 번 클릭해 포커스를 준 뒤 사용)
+        Enter          입력창 안에서 = 추가
+        Space 또는 Enter  입력창 밖에서 = 맨 위(현재 차례) 항목 완료
+                          (연타해도 눌린 횟수만큼 처리됩니다)
+        R              대기열을 초기 명단(names)으로 리셋
+    · 대기열은 브라우저 localStorage("onairkit:queue:list")에 저장되어 새로고침·OBS 재시작 후에도 유지됩니다.
+      초기 명단으로 되돌리려면 URL 뒤에 ?reset=1 을 붙이거나 R 키를 누르세요.
+  ─────────────────────────────────────────────────────────────────────────────
+-->
+<!--
+  Pretendard / SIL Open Font License 1.1
+  (c) 2021 Kil Hyung-jin, with Reserved Font Name 'Pretendard'
+  https://github.com/orioncactus/pretendard/blob/main/LICENSE
+  온에어킷은 Pretendard를 수정 없이 원본 그대로 CDN으로 불러옵니다.
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+  body{font-family:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+       -webkit-font-smoothing:antialiased}
+
+  :root{
+    --fs:30px;                          /* 기준 글자 크기 */
+    --mg:48px;                          /* 화면 가장자리 여백 */
+    --accent:#00ffa3;                   /* 포인트 색 */
+    --radius:14px;                      /* 모서리 */
+    --shadow:0 10px 28px rgba(0,0,0,.38);
+    --bar:rgba(18,19,24,.92);           /* 패널 배경 */
+    --ink:#f4f6f8;                      /* 기본 글자색 */
+    --sub:rgba(244,246,248,.52);        /* 보조 글자색 */
+    --line:rgba(255,255,255,.10);       /* 경계선 */
+    --field:rgba(255,255,255,.10);      /* 입력창/버튼 배경 */
+    --numbg:rgba(255,255,255,.08);      /* 순번 칩 배경 */
+    --chipink:#0e1116;                  /* 액센트 위에 얹는 글자색 */
+    --acc-a:rgba(0,255,163,.15);        /* 액센트 15% */
+    --acc-b:rgba(0,255,163,.34);        /* 액센트 34% */
+    --motion:cubic-bezier(.2,.8,.2,1);
+  }
+  body.light{
+    --ink:#14171c; --sub:rgba(20,23,28,.5); --line:rgba(0,0,0,.09);
+    --field:rgba(0,0,0,.055); --numbg:rgba(0,0,0,.06);
+  }
+
+  /* ── 위치(pos) ───────────────────────────────────────────── */
+  #stage{position:fixed;right:var(--mg);top:var(--mg)}
+  body.pos-bl #stage{left:var(--mg);right:auto;top:auto;bottom:var(--mg);transform:none}
+  body.pos-br #stage{right:var(--mg);left:auto;top:auto;bottom:var(--mg);transform:none}
+  body.pos-tl #stage{left:var(--mg);right:auto;top:var(--mg);bottom:auto;transform:none}
+  body.pos-tr #stage{right:var(--mg);left:auto;top:var(--mg);bottom:auto;transform:none}
+  body.pos-tc #stage{left:50%;right:auto;top:var(--mg);bottom:auto;transform:translateX(-50%)}
+  body.pos-bc #stage{left:50%;right:auto;top:auto;bottom:var(--mg);transform:translateX(-50%)}
+  body.pos-c  #stage{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%)}
+
+  /* ── 크레딧 (5개 위젯 공통 코드) ─────────────────────────── */
+  #wrap{position:relative}
+  #credit{position:absolute;right:2px;bottom:-17px;font-size:11px;font-weight:600;
+    letter-spacing:.06em;color:rgba(255,255,255,.34);
+    text-shadow:0 1px 3px rgba(0,0,0,.55);pointer-events:none;user-select:none;white-space:nowrap}
+  body.light #credit{color:rgba(0,0,0,.30);text-shadow:none}
+  body.nocredit #credit{display:none}
+  /* 위쪽 배치(tl/tr/tc)에서는 크레딧이 화면 밖으로 잘리지 않도록 아래로 뒤집는다 */
+  body.pos-tl #credit,body.pos-tr #credit,body.pos-tc #credit{bottom:auto;top:calc(100% + 4px)}
+  /* 아래쪽 배치(bl/br/bc) + margin이 17px 미만이면 크레딧이 화면 아래로 잘리므로 위로 뒤집는다 */
+  body.credit-up #credit{bottom:auto;top:-17px}
+
+  /* ── 본체 ────────────────────────────────────────────────── */
+  #wrap{filter:drop-shadow(var(--shadow));animation:enter .55s var(--motion) both}
+  @keyframes enter{from{transform:translateY(-14px);opacity:0}}
+  body.pos-bl #wrap,body.pos-br #wrap,body.pos-bc #wrap{animation-name:enterUp}
+  @keyframes enterUp{from{transform:translateY(14px);opacity:0}}
+
+  #panel{position:relative;width:calc(var(--fs)*13);max-width:calc(100vw - var(--mg)*2 - 4px);
+    background:var(--bar);border:1px solid var(--line);border-radius:var(--radius);
+    padding:calc(var(--fs)*.5);overflow:hidden;
+    color:var(--ink);text-shadow:0 1px 2px rgba(0,0,0,.35)}
+  body.light #panel{text-shadow:none}
+
+  /* news 테마: 왼쪽 액센트 세로 바 */
+  body.theme-news #panel{padding-left:calc(var(--fs)*.78)}
+  body.theme-news #panel::before{content:"";position:absolute;left:0;top:0;bottom:0;
+    width:calc(var(--fs)*.18);background:var(--accent)}
+
+  /* 제목 줄 */
+  #head{display:flex;align-items:center;gap:calc(var(--fs)*.3);
+    padding:0 calc(var(--fs)*.16) calc(var(--fs)*.42)}
+  #head::before{content:"";flex:0 0 auto;width:calc(var(--fs)*.16);height:calc(var(--fs)*.66);
+    background:var(--accent);border-radius:2px}
+  body.theme-news #head::before{border-radius:0}
+  #title{flex:1 1 auto;min-width:0;font-size:calc(var(--fs)*.72);font-weight:800;letter-spacing:-.02em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #count{flex:0 0 auto;font-size:calc(var(--fs)*.46);font-weight:700;color:var(--sub);
+    letter-spacing:.02em;white-space:nowrap}
+  body.notitle #head{display:none}
+
+  /* 조작 줄 — 평소엔 숨김, #wrap:hover 일 때만 노출 (OBS 상호작용 창 전용) */
+  #ctrl{display:flex;align-items:center;gap:calc(var(--fs)*.22);
+    opacity:0;pointer-events:none;max-height:0;margin-bottom:0;overflow:hidden;
+    transition:opacity .18s ease,max-height .24s var(--motion),margin-bottom .24s var(--motion)}
+  #wrap:hover #ctrl{opacity:1;pointer-events:auto;
+    max-height:calc(var(--fs)*2);margin-bottom:calc(var(--fs)*.4)}
+  #inp{flex:1 1 auto;min-width:0;height:calc(var(--fs)*1.22);
+    background:var(--field);border:1px solid var(--line);border-radius:calc(var(--radius)*.6);
+    color:var(--ink);font:inherit;font-size:calc(var(--fs)*.52);font-weight:600;
+    padding:0 calc(var(--fs)*.36);outline:none;text-shadow:none}
+  #inp::placeholder{color:var(--sub)}
+  #inp:focus{border-color:var(--acc-b)}
+  #add{flex:0 0 auto;height:calc(var(--fs)*1.22);padding:0 calc(var(--fs)*.5);
+    background:var(--accent);color:var(--chipink);border:0;border-radius:calc(var(--radius)*.6);
+    font:inherit;font-size:calc(var(--fs)*.52);font-weight:800;cursor:pointer;
+    white-space:nowrap;text-shadow:none}
+  #add:hover{filter:brightness(1.08)}
+  #add:active{transform:translateY(1px)}
+
+  /* 목록 */
+  #list{display:flex;flex-direction:column;gap:calc(var(--fs)*.22)}
+  .item{position:relative;display:flex;align-items:center;gap:calc(var(--fs)*.4);
+    height:calc(var(--fs)*1.72);padding:0 calc(var(--fs)*.36);
+    border-radius:calc(var(--radius)*.62);background:var(--numbg)}
+  .item.now{background:var(--acc-a)}
+  .item.now::after{content:"";position:absolute;left:0;top:22%;bottom:22%;
+    width:calc(var(--fs)*.11);background:var(--accent);border-radius:0 3px 3px 0}
+
+  .num{flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+    width:calc(var(--fs)*1.12);height:calc(var(--fs)*1.12);border-radius:calc(var(--radius)*.5);
+    background:var(--field);color:var(--sub);
+    font-size:calc(var(--fs)*.52);font-weight:800;font-variant-numeric:tabular-nums;text-shadow:none}
+  .item.now .num{background:var(--accent);color:var(--chipink)}
+
+  .name{flex:1 1 auto;min-width:0;font-size:calc(var(--fs)*.84);font-weight:700;letter-spacing:-.02em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.9}
+  .item.now .name{opacity:1;font-weight:800}
+
+  /* 항목 조작 버튼 — 위젯에 마우스가 올라가 있고, 그 줄에 hover 했을 때만 */
+  .ops{flex:0 0 auto;display:flex;align-items:center;gap:calc(var(--fs)*.14);
+    max-width:0;overflow:hidden;opacity:0;pointer-events:none;
+    transition:max-width .22s var(--motion),opacity .16s ease}
+  #wrap:hover .item:hover .ops{max-width:calc(var(--fs)*5.4);opacity:1;pointer-events:auto}
+  .op{flex:0 0 auto;height:calc(var(--fs)*.94);padding:0 calc(var(--fs)*.26);
+    background:var(--field);border:1px solid var(--line);border-radius:calc(var(--radius)*.45);
+    color:var(--ink);font:inherit;font-size:calc(var(--fs)*.42);font-weight:700;
+    white-space:nowrap;cursor:pointer;opacity:.85;text-shadow:none}
+  .op:hover{opacity:1}
+  .op.done:hover{background:var(--accent);border-color:transparent;color:var(--chipink)}
+  .op.del:hover{background:rgba(255,64,88,.9);border-color:transparent;color:#fff}
+
+  /* 비었을 때 / 넘칠 때 */
+  #empty{display:none;padding:calc(var(--fs)*.62) calc(var(--fs)*.36);
+    font-size:calc(var(--fs)*.56);font-weight:600;color:var(--sub);letter-spacing:.01em;
+    animation:soft .5s var(--motion) both}
+  @keyframes soft{from{opacity:0}}
+  #more{display:none;padding:calc(var(--fs)*.3) calc(var(--fs)*.36) calc(var(--fs)*.04);
+    font-size:calc(var(--fs)*.5);font-weight:700;color:var(--sub);letter-spacing:-.01em}
+
+  @media (prefers-reduced-motion: reduce){
+    #wrap{animation:none}
+    #ctrl,.ops,#empty{transition:none;animation:none}
+  }
+</style>
+</head>
+<body>
+  <div id="stage">
+    <div id="wrap">
+      <div id="panel">
+        <div id="head">
+          <span id="title"></span>
+          <span id="count"></span>
+        </div>
+        <div id="ctrl">
+          <input id="inp" type="text" maxlength="80" autocomplete="off" spellcheck="false" placeholder="닉네임 입력 후 Enter">
+          <button id="add" type="button">추가</button>
+        </div>
+        <div id="list"></div>
+        <div id="empty">대기 인원 없음</div>
+        <div id="more"></div>
+      </div>
+      <div id="credit">온에어킷</div>
+    </div>
+  </div>
+
+<script>
+/* ── 기본값: 메모장으로 열어 여기 값만 고쳐도 그대로 동작합니다 ─────────────── */
+const CONFIG = {
+  title:    "시참 대기열",                                          // 빈 값("")이면 제목 줄 숨김
+  names:    "고구마조아|밤샘코딩|초코라떼|픽셀사냥꾼|참치마요",      // 초기 대기열, | 로 구분
+  max:      5,          // 화면에 보여줄 최대 인원 (1~20). 넘치면 "외 N명"
+  numbered: 1,          // 1=순번 표시, 0=숨김
+  current:  1,          // 1=맨 위(현재 차례) 액센트 강조
+  size:     30,         // 기준 글자 크기(px, 16~120)
+  accent:   "",         // 포인트 색 hex. 비우면 theme 기본색
+  dark:     "",         // 1=다크 / 0=라이트. 비우면 theme 기본
+  theme:    "default",  // default | news | pastel | minimal
+  pos:      "tr",       // bl | br | tl | tr | tc | bc | c
+  margin:   48,         // 화면 가장자리 여백(px, 0~400)
+  credit:   1           // 1=표시 / 0=숨김 / 그 외 문자열이면 그 문구로 교체
+};
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+/* 테마 프리셋: 색·모서리·그림자만 다르고 레이아웃은 완전히 동일 */
+const THEMES = {
+  "default": { accent:"#00ffa3", radius:"14px", dark:1,
+               shadow:"0 10px 28px rgba(0,0,0,.38)",
+               barDark:"rgba(18,19,24,.92)",  barLight:"rgba(255,255,255,.94)" },
+  "news":    { accent:"#ff2d55", radius:"4px",  dark:1,
+               shadow:"0 8px 22px rgba(0,0,0,.46)",
+               barDark:"rgba(11,16,32,.95)",  barLight:"rgba(240,243,250,.96)" },
+  "pastel":  { accent:"#ff8fb1", radius:"22px", dark:0,
+               shadow:"0 18px 44px rgba(120,80,95,.30)",
+               barDark:"rgba(40,30,36,.93)",  barLight:"rgba(255,250,246,.96)" },
+  "minimal": { accent:"#1a1a1a", accentDark:"#ededed", radius:"8px", dark:0,
+               shadow:"0 3px 10px rgba(0,0,0,.16)",
+               barDark:"rgba(24,24,26,.94)",  barLight:"rgba(255,255,255,.94)" }
+};
+
+const KEY = "onairkit:queue:list";   /* localStorage 키 */
+const MOTION = "cubic-bezier(.2,.8,.2,1)";
+const MAX_QUEUE = 200;               /* 안전 상한 */
+const MAX_NAME = 80;                 /* 닉네임 글자 수 상한 */
+
+const $ = function (id) { return document.getElementById(id); };
+const q = new URLSearchParams(location.search);
+const REDUCE = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+/* ── 파라미터 읽기 + 검증 (이상한 값이면 무조건 기본값으로) ──────────────── */
+function raw(key, def) {
+  if (q.has(key)) return String(q.get(key));
+  return (def === undefined || def === null) ? "" : String(def);
+}
+function clamp(v, a, b) { return Math.min(b, Math.max(a, v)); }
+
+const NUMSTR = /^[+-]?\d+(\.\d+)?$/;   /* 순수한 숫자만 통과 ("1e5"·"5abc" 같은 건 기본값으로) */
+function toNum(s) {
+  const t = String(s === undefined || s === null ? "" : s).trim();
+  return NUMSTR.test(t) ? Math.round(parseFloat(t)) : NaN;
+}
+function numP(key, def, min, max, hard) {
+  let v = toNum(raw(key, def));
+  if (!isFinite(v)) v = toNum(def);   /* 파라미터가 이상하면 CONFIG 값 */
+  if (!isFinite(v)) v = hard;         /* CONFIG도 이상하면 최종 기본값 */
+  return clamp(v, min, max);
+}
+function boolP(key, def) {
+  const s = String(raw(key, def)).trim().toLowerCase();
+  if (s === "1" || s === "true" || s === "y") return true;
+  if (s === "0" || s === "false" || s === "n") return false;
+  const d = String(def === undefined || def === null ? "" : def).trim().toLowerCase();
+  return !(d === "0" || d === "false" || d === "");
+}
+function enumP(key, def, list, hard) {
+  const s = String(raw(key, def)).trim().toLowerCase();
+  if (list.indexOf(s) >= 0) return s;
+  const d = String(def === undefined || def === null ? "" : def).trim().toLowerCase();
+  return list.indexOf(d) >= 0 ? d : hard;
+}
+function hexRgb(h) {
+  let s = String(h).replace(/^#/, "");
+  if (s.length === 3) s = s.charAt(0) + s.charAt(0) + s.charAt(1) + s.charAt(1) + s.charAt(2) + s.charAt(2);
+  const n = parseInt(s, 16);
+  if (!isFinite(n)) return [0, 255, 163];
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function relLum(c) { return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255; }
+
+const HEX = /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+const themeName = enumP("theme", CONFIG.theme, ["default", "news", "pastel", "minimal"], "default");
+const T = THEMES[themeName];
+
+/* theme이 dark/accent의 기본값을 정하고, 사용자가 명시하면 그것이 우선 */
+const darkRaw = (q.has("dark") ? String(q.get("dark")) : String(CONFIG.dark === undefined ? "" : CONFIG.dark)).trim();
+const isDark = (darkRaw === "1" || darkRaw.toLowerCase() === "true") ? true
+             : (darkRaw === "0" || darkRaw.toLowerCase() === "false") ? false
+             : !!T.dark;
+const accRaw = (q.has("accent") ? String(q.get("accent")) : String(CONFIG.accent === undefined ? "" : CONFIG.accent)).trim();
+const accent = HEX.test(accRaw)
+  ? ("#" + accRaw.replace(/^#/, ""))
+  : ((isDark && T.accentDark) ? T.accentDark : T.accent);
+
+const cfg = {
+  title:    (q.has("title") ? String(q.get("title")) : String(CONFIG.title === undefined ? "" : CONFIG.title)).trim().slice(0, 60),
+  max:      numP("max", CONFIG.max, 1, 20, 5),
+  numbered: boolP("numbered", CONFIG.numbered),
+  current:  boolP("current", CONFIG.current),
+  size:     numP("size", CONFIG.size, 16, 120, 30),
+  margin:   numP("margin", CONFIG.margin, 0, 400, 48),
+  pos:      enumP("pos", CONFIG.pos, ["bl", "br", "tl", "tr", "tc", "bc", "c"], "tr"),
+  theme:    themeName,
+  dark:     isDark,
+  accent:   accent
+};
+
+/* ── 스타일 적용 ──────────────────────────────────────────────────────────── */
+const rootStyle = document.documentElement.style;
+const rgb = hexRgb(cfg.accent);
+rootStyle.setProperty("--fs", cfg.size + "px");
+rootStyle.setProperty("--mg", cfg.margin + "px");
+rootStyle.setProperty("--accent", cfg.accent);
+rootStyle.setProperty("--radius", T.radius);
+rootStyle.setProperty("--shadow", T.shadow);
+rootStyle.setProperty("--bar", isDark ? T.barDark : T.barLight);
+rootStyle.setProperty("--acc-a", "rgba(" + rgb.join(",") + ",.15)");
+rootStyle.setProperty("--acc-b", "rgba(" + rgb.join(",") + ",.34)");
+rootStyle.setProperty("--chipink", relLum(rgb) > 0.55 ? "#0e1116" : "#ffffff");
+
+document.body.classList.add("theme-" + cfg.theme);
+document.body.classList.add("pos-" + cfg.pos);
+if (!isDark) document.body.classList.add("light");
+
+if (cfg.title) $("title").textContent = cfg.title;   /* 사용자 입력은 textContent만 사용 (XSS 방지) */
+else document.body.classList.add("notitle");
+
+/* ── 대기열 데이터 ────────────────────────────────────────────────────────── */
+function sanitize(arr) {
+  const out = [];
+  if (!arr || typeof arr.length !== "number") return out;
+  for (let i = 0; i < arr.length && out.length < MAX_QUEUE; i++) {
+    const v = arr[i];
+    const s = String(v === undefined || v === null ? "" : v).replace(/\s+/g, " ").trim();
+    if (s) out.push(s.slice(0, MAX_NAME));
+  }
+  return out;
+}
+
+const initialNames = sanitize(
+  (q.has("names") ? String(q.get("names")) : String(CONFIG.names === undefined ? "" : CONFIG.names)).split("|")
+);
+
+function loadNames() {
+  let s = null;
+  try { s = localStorage.getItem(KEY); } catch (e) { return null; }   /* 저장소 차단 환경에서도 죽지 않게 */
+  if (s === null) return null;
+  let arr = null;
+  try { const v = JSON.parse(s); if (Array.isArray(v)) arr = v; } catch (e) { arr = null; }
+  if (!arr) {
+    const head = String(s).trim().charAt(0);
+    if (head === "[" || head === "{") return null;                    /* 저장값이 깨졌으면 초기 명단으로 */
+    arr = String(s).split("|");                                       /* 옛 형식(a|b|c)도 읽어 준다 */
+  }
+  return sanitize(arr);
+}
+function saveNames() {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(queue.map(function (it) { return it.name; })));
+  } catch (e) { /* 저장 실패해도 화면은 정상 동작 */ }
+}
+
+let uidSeq = 0;
+function mk(name) { uidSeq++; return { uid: "q" + uidSeq, name: name }; }
+
+/* ?reset=1 뿐 아니라 값 없는 ?reset 도 리셋으로 받아 준다 (오타로 안 먹는 일이 없게) */
+const resetRaw = (q.has("reset") ? String(q.get("reset")) : "0").trim().toLowerCase();
+const doReset = q.has("reset") && (resetRaw === "" || resetRaw === "1" || resetRaw === "true" || resetRaw === "y");
+const stored = doReset ? null : loadNames();
+let queue = (stored === null ? initialNames : stored).map(function (n) { return mk(n); });
+if (doReset) saveNames();
+
+/* ── 렌더링 ───────────────────────────────────────────────────────────────── */
+const listEl = $("list"), moreEl = $("more"), emptyEl = $("empty"), countEl = $("count");
+let capNow = cfg.max;   /* 화면 높이에 맞춰 실제로 그릴 줄 수 */
+
+/* 화면 높이에 몇 줄까지 들어가는지 계산 (창 크기가 바뀌면 다시 계산) */
+function layout() {
+  const fs = cfg.size;
+  const chrome = fs * (cfg.title ? 1.6 : 0) + fs * 1.0 + fs * 0.95 + 28;   /* 제목+패딩+"외 N명"+크레딧 */
+  const avail = window.innerHeight - cfg.margin * 2 - chrome;
+  let n = Math.floor(avail / (fs * 1.94));                                 /* 줄 높이 + 줄 간격 */
+  if (!isFinite(n)) n = cfg.max;
+  capNow = clamp(n, 1, cfg.max);
+}
+
+function rowsToShow() { return Math.min(cfg.max, capNow, queue.length); }
+
+function makeRow(it, i) {
+  const row = document.createElement("div");
+  row.className = "item" + (i === 0 && cfg.current ? " now" : "");
+  row.dataset.uid = it.uid;
+
+  if (cfg.numbered) {
+    const num = document.createElement("span");
+    num.className = "num";
+    num.textContent = String(i + 1);
+    row.appendChild(num);
+  }
+
+  const name = document.createElement("span");
+  name.className = "name";
+  name.textContent = it.name;          /* textContent만 사용 */
+  row.appendChild(name);
+
+  const ops = document.createElement("span");
+  ops.className = "ops";
+  const bDone = document.createElement("button");
+  bDone.type = "button"; bDone.className = "op done"; bDone.textContent = "완료";
+  bDone.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); removeByUid(it.uid, "done"); });
+  const bDel = document.createElement("button");
+  bDel.type = "button"; bDel.className = "op del"; bDel.textContent = "삭제";
+  bDel.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); removeByUid(it.uid, "del"); });
+  ops.appendChild(bDone); ops.appendChild(bDel);
+  row.appendChild(ops);
+
+  return row;
+}
+
+function render(animate) {
+  const useAnim = !!animate && !REDUCE;
+  const prev = {};
+  let i;
+
+  /* 1) 움직이기 전 위치 기록 (FLIP) */
+  if (useAnim) {
+    const old = Array.prototype.slice.call(listEl.children);
+    for (i = 0; i < old.length; i++) {
+      const uid = old[i].dataset ? old[i].dataset.uid : null;
+      if (uid) prev[uid] = old[i].getBoundingClientRect().top;
+    }
+  }
+
+  /* 2) 목록 다시 그리기 */
+  while (listEl.firstChild) listEl.removeChild(listEl.firstChild);
+  const n = rowsToShow();
+  for (i = 0; i < n; i++) listEl.appendChild(makeRow(queue[i], i));
+
+  const extra = queue.length - n;
+  moreEl.textContent = extra > 0 ? ("외 " + extra + "명") : "";
+  moreEl.style.display = extra > 0 ? "block" : "none";
+  emptyEl.style.display = queue.length ? "none" : "block";
+  countEl.textContent = queue.length + "명";
+
+  /* 3) 새 줄은 슬라이드+페이드로 등장, 밀려난 줄은 제자리로 부드럽게 이동 */
+  if (useAnim) {
+    const now = Array.prototype.slice.call(listEl.children);
+    for (i = 0; i < now.length; i++) {
+      const el = now[i];
+      if (!el.animate) continue;
+      const uid = el.dataset.uid;
+      if (Object.prototype.hasOwnProperty.call(prev, uid)) {
+        const d = prev[uid] - el.getBoundingClientRect().top;
+        if (Math.abs(d) > 0.5) {
+          el.animate([{ transform: "translateY(" + d + "px)" }, { transform: "none" }],
+                     { duration: 340, easing: MOTION });
+        }
+      } else {
+        el.animate([{ transform: "translateX(16px)", opacity: 0 }, { transform: "none", opacity: 1 }],
+                   { duration: 300, easing: MOTION, fill: "backwards" });
+      }
+    }
+  }
+}
+
+function findRow(uid) {
+  const kids = listEl.children;
+  for (let i = 0; i < kids.length; i++) if (kids[i].dataset.uid === uid) return kids[i];
+  return null;
+}
+
+/* 완료(위로 사라짐) / 삭제(옆으로 사라짐) — 사라진 뒤 나머지가 올라온다 */
+function removeByUid(uid, mode) {
+  let found = false;
+  for (let i = 0; i < queue.length; i++) if (queue[i].uid === uid) { found = true; break; }
+  if (!found) return;
+
+  const el = findRow(uid);
+  if (el && el.dataset.leaving === "1") return;
+
+  let settled = false;
+  function finish() {
+    if (settled) return;
+    settled = true;
+    for (let j = 0; j < queue.length; j++) {
+      if (queue[j].uid === uid) { queue.splice(j, 1); break; }
+    }
+    saveNames();
+    render(true);
+  }
+
+  if (!el || REDUCE || !el.animate) { finish(); return; }
+  el.dataset.leaving = "1";
+  const frames = (mode === "del")
+    ? [{ transform: "none", opacity: 1 }, { transform: "translateX(22px) scale(.96)", opacity: 0 }]
+    : [{ transform: "none", opacity: 1 }, { transform: "translateY(-72%)", opacity: 0 }];
+  const anim = el.animate(frames, { duration: 230, easing: "cubic-bezier(.4,0,.6,1)", fill: "forwards" });
+  anim.onfinish = finish;
+  setTimeout(finish, 420);   /* 애니메이션이 안 끝나도(백그라운드 등) 반드시 처리되게 */
+}
+
+function addName(v) {
+  const s = String(v === undefined || v === null ? "" : v).replace(/\s+/g, " ").trim();
+  if (!s) return false;
+  if (queue.length >= MAX_QUEUE) return false;
+  queue.push(mk(s.slice(0, MAX_NAME)));
+  saveNames();
+  render(true);
+  return true;
+}
+
+function submitInput() {
+  const inp = $("inp");
+  if (addName(inp.value)) inp.value = "";
+  try { inp.focus(); } catch (e) { /* 무시 */ }
+}
+
+function resetQueue() {
+  queue = initialNames.map(function (n) { return mk(n); });
+  saveNames();
+  render(true);
+  $("inp").value = "";
+}
+
+/* ── 조작 (OBS "상호작용" 창에서만 동작) ──────────────────────────────────── */
+$("add").addEventListener("click", function (e) { e.preventDefault(); submitInput(); });
+$("inp").addEventListener("keydown", function (e) {
+  if (e.isComposing) return;                       /* 한글 조합 중 Enter는 무시 */
+  if (e.key === "Enter") { e.preventDefault(); submitInput(); }
+});
+
+document.addEventListener("keydown", function (e) {
+  if (e.isComposing) return;
+  /* Ctrl+R(새로고침) 같은 조합키는 가로채지 않는다.
+     이 가드가 없으면 Ctrl+R 이 새로고침 대신 대기열 리셋으로 먹힌다.
+     (timer / counter / roulette 과 동일한 처리) */
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const t = e.target;
+  const tag = t && t.tagName ? t.tagName : "";
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "BUTTON") return;   /* 입력창·버튼은 각자 처리 */
+
+  const k = e.key;
+  if (k === "Enter" || k === " " || k === "Spacebar") {          /* 맨 위 항목 완료 */
+    e.preventDefault();
+    /* 연타 대응: 이미 사라지는 중인 항목은 건너뛰고 그 다음 차례를 완료한다.
+       (사라지는 애니메이션 230ms 동안 누른 키가 씹히면 안 됨) */
+    for (let i = 0; i < queue.length; i++) {
+      const row = findRow(queue[i].uid);
+      if (!row || row.dataset.leaving !== "1") { removeByUid(queue[i].uid, "done"); break; }
+    }
+  } else if (e.code === "KeyR" || k === "r" || k === "R" || k === "ㄱ" || k === "ㄲ") { /* 리셋 (한글 자판의 R 자리 포함) */
+    e.preventDefault();
+    resetQueue();
+  }
+});
+
+/* ── 크레딧 (5개 위젯 공통 코드) ──────────────────────────────────────────── */
+const creditRaw = q.has("credit") ? q.get("credit") : String(CONFIG.credit);
+if (creditRaw === "0") document.body.classList.add("nocredit");
+else document.getElementById("credit").textContent =
+  (creditRaw === "1" || creditRaw === "") ? "온에어킷" : creditRaw;
+
+/* 아래쪽 배치(bl/br/bc)는 크레딧이 위젯보다 17px 아래에 붙으므로(bottom:-17px)
+   여백이 17px보다 좁으면 화면 밖으로 잘린다. 그때만 위쪽으로 뒤집는다. */
+if ((cfg.pos === "bl" || cfg.pos === "br" || cfg.pos === "bc") && cfg.margin < 17) {
+  document.body.classList.add("credit-up");
+}
+
+/* ── 시작 ─────────────────────────────────────────────────────────────────── */
+layout();
+render(false);
+
+window.addEventListener("resize", function () {
+  const before = capNow;
+  layout();
+  if (before !== capNow) render(false);
+});
+
+if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+  document.fonts.ready.then(function () { layout(); render(false); })["catch"](function () { /* 무시 */ });
+}
+</script>
+</body>
+</html>

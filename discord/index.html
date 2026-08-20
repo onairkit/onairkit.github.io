@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>온에어킷 디스코드로 이동합니다</title>
+<meta name="robots" content="noindex">
+
+<!--
+  ─────────────────────────────────────────────────────────────
+  온에어킷 디스코드 초대 리다이렉트
+  ─────────────────────────────────────────────────────────────
+
+  ■ 이 파일이 왜 있나요?
+
+    디스코드에서 discord.gg/onairkit 처럼 예쁜 주소를 쓰려면
+    서버 부스트 14개(레벨 3)가 필요합니다. 유료이고, 부스트가 끊기면
+    30일 뒤 주소를 잃습니다.
+
+    그래서 대신 이 페이지를 씁니다.
+    랜딩·README·GitHub 이슈 템플릿의 모든 디스코드 링크는
+    discord.gg 주소가 아니라 이 페이지를 가리킵니다.
+
+  ■ 그래서 뭐가 좋나요?
+
+    나중에 서버를 새로 만들거나 초대 링크가 바뀌어도
+    ★ 이 파일 한 곳만 고치면 됩니다. ★
+    (직접 링크를 박아뒀다면 8곳을 전부 찾아 고쳐야 합니다)
+
+  ■ 링크가 바뀌면 여기만 고치세요
+
+    아래 INVITE 값 한 줄. 그게 전부입니다.
+
+  ■ 디스코드 초대 링크 만들 때 주의
+
+    기본 초대 링크는 7일 후 만료됩니다.
+    반드시 "만료 기간: 없음" + "최대 사용 횟수: 제한 없음" 으로 만드세요.
+    (이 옵션은 서버를 "커뮤니티 서버"로 활성화해야 보입니다)
+    자세한 절차는 _운영/디스코드_서버설정.md 참고.
+  ─────────────────────────────────────────────────────────────
+-->
+
+<script>
+  /* ★ 여기 한 줄만 바꾸면 모든 디스코드 링크가 함께 바뀝니다 ★ */
+  var INVITE = "https://discord.gg/vdMTFyNmZ4";
+
+  /* 아직 실제 주소로 바꾸지 않았으면 자동 이동을 막고 안내만 보여줍니다.
+     (배포 후 엉뚱한 곳으로 보내는 사고를 막기 위한 안전장치) */
+  var READY = INVITE.indexOf("YOUR_INVITE") === -1;
+  if (READY) location.replace(INVITE);
+</script>
+
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    display:flex;align-items:center;justify-content:center;padding:24px;
+    background:#0e1014;color:#e8ecf1;text-align:center;
+    font-family:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  }
+  .box{max-width:440px}
+  h1{font-size:22px;font-weight:800;margin:0 0 10px}
+  p{font-size:15px;line-height:1.65;color:#9aa4b2;margin:0 0 22px}
+  a.btn{
+    display:inline-block;padding:13px 26px;border-radius:12px;
+    background:#5865F2;color:#fff;font-weight:700;font-size:15px;text-decoration:none;
+  }
+  a.btn:hover{background:#4752c4}
+  .warn{
+    display:none;margin:0 0 20px;padding:14px 16px;border-radius:12px;
+    background:rgba(255,45,85,.10);border:1px solid rgba(255,45,85,.35);
+    color:#ff8098;font-size:13.5px;line-height:1.6;text-align:left;
+  }
+  body.notready .warn{display:block}
+  body.notready a.btn{background:#2a2f3a;color:#6b7480;pointer-events:none}
+  .sub{margin-top:18px;font-size:12.5px;color:#5f6875}
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="warn">
+      <b>아직 초대 링크가 설정되지 않았습니다.</b><br>
+      <code>discord/index.html</code> 파일을 열어 맨 위 <code>INVITE</code> 값을
+      실제 디스코드 초대 주소로 바꿔 주세요.
+    </div>
+
+    <h1>온에어킷 디스코드로 이동합니다</h1>
+    <p>잠시 후 자동으로 이동합니다.<br>이동하지 않으면 아래 버튼을 눌러 주세요.</p>
+    <a class="btn" id="go" href="#">디스코드 열기</a>
+    <div class="sub">이동되지 않으면 브라우저의 팝업 차단을 확인해 주세요.</div>
+  </div>
+
+<script>
+  if (READY) document.getElementById("go").href = INVITE;
+  else document.body.classList.add("notready");
+</script>
+</body>
+</html>

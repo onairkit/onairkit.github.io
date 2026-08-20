@@ -1,0 +1,95 @@
+name: 🐛 버그 신고
+description: 위젯이 안 뜨거나, 이상하게 보이거나, 조작이 안 될 때
+title: "[버그] "
+labels: ["버그"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        고쳐야 할 걸 알려주셔서 고맙습니다.
+        **아래 3번(사용한 주소 전체)만 정확히 적어 주시면 대부분 바로 재현됩니다.**
+        급하시면 [디스코드](https://onairkit.github.io/discord/)로 오셔도 됩니다.
+
+  - type: dropdown
+    id: widget
+    attributes:
+      label: 어떤 위젯인가요?
+      options:
+        - 텔롭 (telop)
+        - 타이머 (timer)
+        - 카운터 (counter)
+        - 시참 대기열 (queue)
+        - 룰렛 (roulette)
+        - 랜딩 페이지 / URL 빌더
+        - 모르겠음
+    validations:
+      required: true
+
+  - type: textarea
+    id: url
+    attributes:
+      label: 사용한 주소 전체
+      description: |
+        OBS 브라우저 소스의 URL 칸에 넣은 주소를 **자르지 말고 통째로** 붙여 주세요.
+        파라미터가 원인인 경우가 가장 많아서, 이게 있으면 재현이 빨라집니다.
+      placeholder: https://onairkit.github.io/widgets/telop.html?text=...&theme=news
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 어떻게 되기를 기대하셨나요?
+      placeholder: 자막 바가 화면 왼쪽 아래에 뜨기를 기대했습니다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 실제로는 어떻게 되나요?
+      placeholder: 아무것도 안 보이고 화면이 까맣게만 나옵니다.
+    validations:
+      required: true
+
+  - type: input
+    id: obs
+    attributes:
+      label: OBS 버전
+      description: OBS 메뉴의 [도움말] → [정보]에서 확인할 수 있습니다.
+      placeholder: "30.2.3"
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: 운영체제
+      options:
+        - Windows
+        - macOS
+        - 기타 / 모름
+
+  - type: dropdown
+    id: how
+    attributes:
+      label: 위젯을 어떻게 넣으셨나요?
+      options:
+        - 온라인 주소(https://)를 URL 칸에 입력
+        - 파일을 내려받아 "로컬 파일" 체크 후 선택
+        - 파일을 내려받고 file:/// 주소로 입력
+        - 기억 안 남
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: 스크린샷 (있으면 큰 도움이 됩니다)
+      description: 이 칸에 이미지를 그대로 끌어다 놓으시면 첨부됩니다.
+
+  - type: checkboxes
+    id: tried
+    attributes:
+      label: 이미 해보신 것 (해당되는 것만)
+      options:
+        - label: OBS에서 소스를 우클릭 → "새로고침" 해봤다
+        - label: 브라우저에서 같은 주소를 열어봤다 (거기서는 되는지 확인)
+        - label: 폭 1920 / 높이 1080으로 설정되어 있는지 확인했다
