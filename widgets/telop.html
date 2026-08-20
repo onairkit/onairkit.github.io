@@ -34,6 +34,7 @@
     │ interval │ 문구 전환 간격(초)                        │ 6             │ 2 ~ 60 (2초 미만 불가)       │
     │ size     │ 기준 글자 크기(px)                        │ 34            │ 16 ~ 120                     │
     │ dark     │ 어두운 바(1) / 밝은 바(0)                 │ 테마별 기본값 │ 1 | 0 (비우면 테마 기본값)   │
+    │ bar      │ 자막 바 배경 표시(1) / 투명(0)            │ 1             │ 1 | 0 (0이면 글자만 떠 있음) │
     │ speed    │ ticker 흐르는 속도(px/초)                 │ 120           │ 40 ~ 400                     │
     │ theme    │ 색·모서리·그림자 프리셋                   │ default       │ default|news|pastel|minimal  │
     │ pos      │ 화면 안에서의 위치                        │ bl (좌하)     │ bl|br|tl|tr|tc|bc|c          │
@@ -41,6 +42,8 @@
     │ credit   │ 오른쪽 아래 크레딧                        │ 1             │ 1 | 0(숨김) | 그 외 = 그 문구│
     │ reset    │ 저장된 상태(일시정지·현재 문구) 무시      │ (없음)        │ 1                            │
     └──────────┴───────────────────────────────────────────┴───────────────┴──────────────────────────────┘
+    * bar=0 이면 어두운 막대 없이 글자만 화면에 뜹니다. 글자에 그림자가 붙어 게임 화면 위에서도 읽힙니다.
+      (글자를 흰색으로 하려면 dark=1 을 함께 쓰세요. 왼쪽 칩은 유지되며, 칩도 없애려면 label= 을 비우세요)
     * theme이 dark와 accent의 기본값을 정합니다. dark나 accent를 직접 쓰면 그 값이 우선입니다.
       (news/default = 다크 기본, pastel/minimal = 라이트 기본)
     * 값을 비워 두면(예: ?size=) 그 파라미터는 없는 것으로 보고 기본값을 씁니다.
@@ -181,6 +184,14 @@
   }
   body.theme-news #bar{margin-left:6px;border-radius:var(--radius)}
 
+  /* bar=0 — 바 배경 없이 글자만. 게임 화면 위에서 읽히도록 그림자를 강하게 */
+  body.nobar #bar{
+    background:transparent;box-shadow:none;
+    text-shadow:0 2px 10px rgba(0,0,0,.85),0 0 3px rgba(0,0,0,.9);
+  }
+  body.nobar #vbar{display:none}
+  body.nobar.light #bar{text-shadow:0 2px 10px rgba(255,255,255,.9),0 0 3px rgba(255,255,255,.95)}
+
   #txt{
     flex:1;min-width:0;
     font-size:var(--fs);font-weight:700;letter-spacing:-.01em;white-space:nowrap;
@@ -310,6 +321,7 @@ const CONFIG = {
   interval: 6,          // 전환 간격(초, 2~60)
   size: 34,             // 글자 크기(px, 16~120)
   dark: "",            // 빈 값이면 테마 기본값 / 1=어두운 바 / 0=밝은 바
+  bar: 1,               // 1=자막 바 배경 표시 / 0=배경 없이 글자만(그림자 부착)
   speed: 120,           // ticker 속도(px/초, 40~400)
   theme: "default",     // default | news | pastel | minimal
   pos: "bl",            // bl | br | tl | tr | tc | bc | c
@@ -375,6 +387,7 @@ const cfg = {
   interval: clamp(num(pick("interval", CONFIG.interval), 6), MIN_INTERVAL, MAX_INTERVAL),
   size:     Math.round(clamp(num(pick("size", CONFIG.size), 34), 16, 120)),
   dark:     isDark,
+  bar:      oneOf(pick("bar", CONFIG.bar), ["1","0"], "1"),
   speed:    clamp(num(pick("speed", CONFIG.speed), 120), 40, 400),
   pos:      oneOf(pick("pos", CONFIG.pos), ["bl","br","tl","tr","tc","bc","c"], "bl"),
   margin:   Math.round(clamp(num(pick("margin", CONFIG.margin), 48), 0, 400))
@@ -393,6 +406,7 @@ root.setProperty("--m", cfg.margin + "px");
 
 document.body.classList.add("theme-" + cfg.theme, "pos-" + cfg.pos, "mode-" + cfg.mode);
 if (!cfg.dark) document.body.classList.add("light");
+if (cfg.bar === "0") document.body.classList.add("nobar");
 
 /* 사용자 입력은 항상 textContent로만 넣는다 (XSS 방지) */
 const labelText = String(cfg.label).trim();
